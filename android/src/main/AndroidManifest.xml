@@ -1,0 +1,27 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.github.blueboytm.flutter_v2ray">
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <application>
+      <service
+          android:name="com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayProxyOnlyService"
+          android:exported="false"
+          android:process=":RunSoLibV2RayDaemon" />
+
+      <service
+          android:name="com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayVPNService"
+          android:exported="false"
+          android:permission="android.permission.BIND_VPN_SERVICE"
+          android:process=":RunSoLibV2RayDaemon">
+          <intent-filter>
+              <action android:name="android.net.VpnService" />
+          </intent-filter>
+          <meta-data
+              android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+              android:value="true" />
+      </service>
+    </application>
+</manifest>

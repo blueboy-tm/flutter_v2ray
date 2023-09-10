@@ -65,6 +65,9 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                     V2rayController.init(binding.getApplicationContext(), 0, "Flutter V2ray");
                     result.success(null);
                     break;
+                case "getServerDelay":
+                    result.success(V2rayController.getV2rayServerDelay(call.argument("config")));
+                    break;
                 case "requestPermission":
                     final Intent request = VpnService.prepare(activity);
                     if (request != null) {

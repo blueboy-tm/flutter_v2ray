@@ -35,23 +35,23 @@ class FlutterV2ray {
   }
 
   /// Start V2Ray service.
-  /// 
+  ///
   /// config:
-  /// 
+  ///
   ///   V2Ray Config (json)
-  /// 
+  ///
   /// blockedApps:
-  /// 
+  ///
   ///   Apps that won't go through the VPN tunnel.
-  /// 
+  ///
   ///   Contains a list of package names.
-  /// 
+  ///
   ///   specifically for Android.
-  /// 
+  ///
   /// proxyOnly:
-  /// 
+  ///
   ///   If it is true, only the v2ray proxy will be executed,
-  /// 
+  ///
   ///   and the VPN tunnel will not be executed.
   Future<void> startV2Ray({
     required String remark,
@@ -72,8 +72,13 @@ class FlutterV2ray {
     await FlutterV2rayPlatform.instance.stopV2Ray();
   }
 
+  /// This method returns the real server delay of the configuration.
+  Future<int> getServerDelay({required String config}) async {
+    return await FlutterV2rayPlatform.instance.getServerDelay(config: config);
+  }
+
   /// parse V2RayURL object from V2Ray share link
-  /// 
+  ///
   /// like vmess://, vless://, trojan://, ss://, socks://
   static V2RayURL parseFromURL(String url) {
     switch (url.split("://")[0].toLowerCase()) {

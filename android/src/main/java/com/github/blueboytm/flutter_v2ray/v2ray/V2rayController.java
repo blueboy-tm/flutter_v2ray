@@ -97,13 +97,8 @@ public class V2rayController {
         }, new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY"));
     }
 
-    public static String getV2rayServerDelay(final String config) {
-        final long server_delay = V2rayCoreManager.getInstance().getV2rayServerDelay(config);
-        if (server_delay == -1L) {
-            return "Network or Server Error";
-        } else {
-            return String.valueOf(server_delay);
-        }
+    public static long getV2rayServerDelay(final String config) {
+        return V2rayCoreManager.getInstance().getV2rayServerDelay(config);
     }
 
     public static AppConfigs.V2RAY_CONNECTION_MODES getConnectionMode() {

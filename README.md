@@ -6,6 +6,7 @@
 
 
 ## Table of contents
++ [Change logs](#change-logs)
 + [Features](#features)
 + [Supported Platforms](#supported-platforms)
 + [Get started](#get-started)
@@ -19,9 +20,17 @@
 + [Donation](#donation)
 
 
+## Change logs
+#### 1.0.1
+
+* fix EventChannel crash
+* add getServerDelay method
+
+#### [see more](./CHANGELOG.md)
 
 ## Features
 - Run V2Ray Proxy & VPN Mode
+- Get Server Delay
 - Parsing V2Ray sharing links and making changes to them
 
 <br>
@@ -111,6 +120,10 @@ await flutterV2ray.initializeV2Ray();
 // v2ray share link like vmess://, vless://, ...
 String link = "link_here";
 V2RayURL parser = FlutterV2ray.parseFromURL(link);
+
+
+// Get Server Delay
+print('${flutterV2ray.getServerDelay(config: parser.getFullConfiguration())}ms');
 
 // Permission is not required if you using proxy only
 if (await flutterV2ray.requestPermission()){

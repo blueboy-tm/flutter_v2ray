@@ -105,7 +105,7 @@ abstract class V2RayURL {
       };
 
   /// Generate Full V2Ray Configuration
-  /// 
+  ///
   /// indent: json encoder indent
   String getFullConfiguration({int indent = 2}) {
     return JsonEncoder.withIndent(' ' * indent).convert(

@@ -16,7 +16,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
     required void Function(V2RayStatus status) onStatusChanged,
   }) async {
     eventChannel.receiveBroadcastStream().distinct().cast().listen((event) {
-      if (event != null){
+      if (event != null) {
         onStatusChanged.call(V2RayStatus(
           duration: event[0],
           uploadSpeed: event[1],
@@ -50,6 +50,13 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   @override
   Future<void> stopV2Ray() async {
     await methodChannel.invokeMethod('stopV2Ray');
+  }
+
+  @override
+  Future<int> getServerDelay({required String config}) async {
+    return await methodChannel.invokeMethod('getServerDelay', {
+      "config": config,
+    });
   }
 
   @override

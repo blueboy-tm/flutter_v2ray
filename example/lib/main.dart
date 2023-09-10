@@ -46,6 +46,65 @@ class _HomePageState extends State<HomePage> {
 
   String remark = "Default Remark";
 
+  void connect() async {
+    if (await flutterV2ray.requestPermission()) {
+      flutterV2ray.startV2Ray(
+        remark: remark,
+        config: config.text,
+        proxyOnly: proxyOnly,
+      );
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Permission Denied'),
+          ),
+        );
+      }
+    }
+  }
+
+  void importConfig() async {
+    if (await Clipboard.hasStrings()) {
+      try {
+        final String link =
+            (await Clipboard.getData('text/plain'))?.text?.trim() ?? '';
+        final V2RayURL v2rayURL = FlutterV2ray.parseFromURL(link);
+        remark = v2rayURL.remark;
+        config.text = v2rayURL.getFullConfiguration();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Success',
+              ),
+            ),
+          );
+        }
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Error: $error',
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void delay() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${(await flutterV2ray.getServerDelay(config: config.text))}ms',
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -119,23 +178,7 @@ class _HomePageState extends State<HomePage> {
                 runSpacing: 5,
                 children: [
                   ElevatedButton(
-                    onPressed: () async {
-                      if (await flutterV2ray.requestPermission()) {
-                        flutterV2ray.startV2Ray(
-                          remark: remark,
-                          config: config.text,
-                          proxyOnly: proxyOnly,
-                        );
-                      } else {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Permission Denied'),
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    onPressed: connect,
                     child: const Text('Connect'),
                   ),
                   ElevatedButton(
@@ -147,43 +190,14 @@ class _HomePageState extends State<HomePage> {
                     child: Text(proxyOnly ? 'Proxy Only' : 'VPN Mode'),
                   ),
                   ElevatedButton(
-                    onPressed: () async {
-                      if (await Clipboard.hasStrings()) {
-                        try {
-                          final String link =
-                              (await Clipboard.getData('text/plain'))
-                                      ?.text
-                                      ?.trim() ??
-                                  '';
-                          final V2RayURL v2rayURL =
-                              FlutterV2ray.parseFromURL(link);
-                          remark = v2rayURL.remark;
-                          config.text = v2rayURL.getFullConfiguration();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Success',
-                                ),
-                              ),
-                            );
-                          }
-                        } catch (error) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Error: $error',
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    },
+                    onPressed: importConfig,
                     child: const Text(
                       'Import from v2ray share link (clipboard)',
                     ),
+                  ),
+                  ElevatedButton(
+                    onPressed: delay,
+                    child: const Text('Server Delay'),
                   ),
                 ],
               ),

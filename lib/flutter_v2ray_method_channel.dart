@@ -16,14 +16,16 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
     required void Function(V2RayStatus status) onStatusChanged,
   }) async {
     eventChannel.receiveBroadcastStream().distinct().cast().listen((event) {
-      onStatusChanged.call(V2RayStatus(
-        duration: event[0],
-        uploadSpeed: event[1],
-        downloadSpeed: event[2],
-        upload: event[3],
-        download: event[4],
-        state: event[5],
-      ));
+      if (event != null){
+        onStatusChanged.call(V2RayStatus(
+          duration: event[0],
+          uploadSpeed: event[1],
+          downloadSpeed: event[2],
+          upload: event[3],
+          download: event[4],
+          state: event[5],
+        ));
+      }
     });
     await methodChannel.invokeMethod(
       'initializeV2Ray',

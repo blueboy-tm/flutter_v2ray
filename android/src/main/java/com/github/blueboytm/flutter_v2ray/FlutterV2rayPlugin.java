@@ -93,14 +93,17 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
         v2rayBroadCastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                ArrayList<String> list = new ArrayList<String>();
-                list.add(intent.getExtras().getString("DURATION"));
-                list.add(intent.getExtras().getString("UPLOAD_SPEED"));
-                list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
-                list.add(intent.getExtras().getString("UPLOAD_TRAFFIC"));
-                list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
-                list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
-                vpnStatusSink.success(list);
+                try {
+                    ArrayList<String> list = new ArrayList<String>();
+                    list.add(intent.getExtras().getString("DURATION"));
+                    list.add(intent.getExtras().getString("UPLOAD_SPEED"));
+                    list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
+                    list.add(intent.getExtras().getString("UPLOAD_TRAFFIC"));
+                    list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
+                    list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
+                    vpnStatusSink.success(list);
+                }
+                catch(Exception e) {}
             }
         };
         activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
@@ -117,14 +120,17 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
         v2rayBroadCastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                ArrayList<String> list = new ArrayList<String>();
-                list.add(intent.getExtras().getString("DURATION"));
-                list.add(intent.getExtras().getString("UPLOAD_SPEED"));
-                list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
-                list.add(intent.getExtras().getString("UPLOAD_TRAFFIC"));
-                list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
-                list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
-                vpnStatusSink.success(list);
+               try {
+                    ArrayList<String> list = new ArrayList<String>();
+                    list.add(intent.getExtras().getString("DURATION"));
+                    list.add(intent.getExtras().getString("UPLOAD_SPEED"));
+                    list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
+                    list.add(intent.getExtras().getString("UPLOAD_TRAFFIC"));
+                    list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
+                    list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
+                    vpnStatusSink.success(list);
+                }
+                catch(Exception e) {}
             }
         };
         activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));

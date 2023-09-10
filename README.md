@@ -131,7 +131,7 @@ flutterV2ray.stopV2Ray();
 <br>
 
 ## More examples
-- [Simple v2ray client writen in flutter](https://github.com/blueboy-tm/flutter_v2ray/blob/master/example/lib/main.dart)
+- [Simple v2ray client written in flutter](https://github.com/blueboy-tm/flutter_v2ray/blob/master/example/lib/main.dart)
 
 ## Credits
 [badvpn (tun2socks)](https://github.com/ambrop72/badvpn) Copyright (C) Ambroz Bizjak
@@ -142,7 +142,7 @@ All rights reserved.
 ## Donation
 If you liked this package, you can support me with one of the following links.
 
-### Buy me a coffe
+### Buy me a coffee
 
 <a href="https://www.buymeacoffee.com/bBUqA54Bhe" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 

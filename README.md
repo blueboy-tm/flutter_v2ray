@@ -21,10 +21,11 @@
 
 
 ## Change logs
-#### 1.0.1
+#### 1.0.2
 
-* fix EventChannel crash
-* add getServerDelay method
+* fix #4 issue: tlsSettings -> path
+* fix #7 issue: reset total traffic after disconnect 
+* validate json config
 
 #### [see more](./CHANGELOG.md)
 

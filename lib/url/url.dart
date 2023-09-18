@@ -152,7 +152,7 @@ abstract class V2RayURL {
         streamSetting['tcpSettings']['header']['type'] = 'http';
         if (host != "" || path != "") {
           streamSetting['tcpSettings']['header']['request'] = {
-            "path": path == null ? "" : path.split(","),
+            "path": path == null ? ["/"] : path.split(","),
             "headers": {
               "Host": host == null ? "" : host.split(","),
               "User-Agent": [
@@ -198,7 +198,7 @@ abstract class V2RayURL {
       };
     } else if (transport == 'ws') {
       streamSetting['wsSettings'] = {
-        "path": path ?? '/',
+        "path": path ?? ['/'],
         "headers": {"Host": host ?? ""},
         "maxEarlyData": null,
         "useBrowserForwarding": null,
@@ -209,7 +209,7 @@ abstract class V2RayURL {
       streamSetting['network'] = 'h2';
       streamSetting['h2Setting'] = {
         "host": host?.split(",") ?? "",
-        "path": path ?? '/',
+        "path": path ?? ['/'],
       };
       sni = streamSetting['h2Setting']['host'].length > 0
           ? streamSetting['h2Setting']['host'][0]

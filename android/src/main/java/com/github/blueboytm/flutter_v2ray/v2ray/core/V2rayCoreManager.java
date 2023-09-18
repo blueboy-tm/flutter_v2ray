@@ -106,6 +106,8 @@ public final class V2rayCoreManager {
             hours = 0;
             uploadSpeed = 0;
             downloadSpeed = 0;
+            totalDownload = 0;
+            totalUpload = 0;
             Log.e(V2rayCoreManager.class.getSimpleName(), "setUpListener => new initialize from " + v2rayServicesListener.getService().getClass().getSimpleName());
         } catch (Exception e) {
             Log.e(V2rayCoreManager.class.getSimpleName(), "setUpListener failed => ", e);

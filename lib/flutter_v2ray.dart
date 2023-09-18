@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_v2ray/url/shadowsocks.dart';
@@ -59,6 +60,14 @@ class FlutterV2ray {
     List<String>? blockedApps,
     bool proxyOnly = false,
   }) async {
+    try {
+      if (jsonDecode(config) == null) {
+        throw ArgumentError('The provided string is not valid JSON');
+      }
+    } catch (_) {
+      throw ArgumentError('The provided string is not valid JSON');
+    }
+
     await FlutterV2rayPlatform.instance.startV2Ray(
       remark: remark,
       config: config,
@@ -74,6 +83,13 @@ class FlutterV2ray {
 
   /// This method returns the real server delay of the configuration.
   Future<int> getServerDelay({required String config}) async {
+    try {
+      if (jsonDecode(config) == null) {
+        throw ArgumentError('The provided string is not valid JSON');
+      }
+    } catch (_) {
+      throw ArgumentError('The provided string is not valid JSON');
+    }
     return await FlutterV2rayPlatform.instance.getServerDelay(config: config);
   }
 

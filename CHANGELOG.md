@@ -1,3 +1,9 @@
+## 1.0.2
+
+* fix #4 issue: tlsSettings -> path
+* fix #7 issue: reset total traffic after disconnect 
+* validate json config
+
 ## 1.0.1
 
 * fix EventChannel crash

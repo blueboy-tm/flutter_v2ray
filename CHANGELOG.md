@@ -1,3 +1,8 @@
+## 1.0.3
+
+* fix vless fingerprint 
+* update android XRay version
+
 ## 1.0.2
 
 * fix #4 issue: tlsSettings -> path

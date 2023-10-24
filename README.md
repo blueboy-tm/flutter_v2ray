@@ -21,11 +21,10 @@
 
 
 ## Change logs
-#### 1.0.2
+### 1.0.3
 
-* fix #4 issue: tlsSettings -> path
-* fix #7 issue: reset total traffic after disconnect 
-* validate json config
+* fix vless fingerprint 
+* update android XRay version
 
 #### [see more](./CHANGELOG.md)
 

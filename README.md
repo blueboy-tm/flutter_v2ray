@@ -38,11 +38,11 @@
 
 ## Supported Platforms
 
-| Platform  | Status    |
-| --------- | --------- |
-| Android   | Done ✅   |
-| IOS       | Soon ❎   |
-| Desktop   | Soon ❎   |
+| Platform  | Status    | Info |
+| --------- | --------- | ---- |
+| Android   | Done ✅   | Xray v24 v1.8.1.4 |
+| IOS       | Soon ❎   | - |
+| Desktop   | Soon ❎   | - |
 
 <br>
 

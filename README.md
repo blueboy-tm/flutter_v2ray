@@ -144,7 +144,7 @@ flutterV2ray.stopV2Ray();
 <br>
 
 
-## Android configuration befor publish to Google Play🚀
+## Android configuration before publish to Google Play🚀
 ### gradle.preperties
 - add this line 
 ```gradle

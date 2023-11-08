@@ -143,6 +143,53 @@ flutterV2ray.stopV2Ray();
 
 <br>
 
+
+## Android configuration befor publish to Google Play🚀
+### gradle.preperties
+- add this line 
+```gradle
+android.bundle.enableUncompressedNativeLibs = false
+```
+
+### build.gradle (app) 
+- Find the buildTypes block:
+```gradle
+buildTypes {
+        release {
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+               signingConfig signingConfigs.release
+        }
+    }
+```
+- And replace it with the following configuration info:
+```gradle
+splits {
+        abi {
+            enable true
+            reset()
+            //noinspection ChromeOsAbiSupport
+            include "x86_64", "armeabi-v7a", "arm64-v8a"
+
+            universalApk true
+        }
+    }
+
+   buildTypes {
+        release {
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+               signingConfig signingConfigs.release
+               ndk {
+                //noinspection ChromeOsAbiSupport
+                abiFilters "x86_64", "armeabi-v7a", "arm64-v8a"
+                debugSymbolLevel 'FULL'
+            }
+        }
+    }
+```
+
+
 ## More examples
 - [Simple v2ray client written in flutter](https://github.com/blueboy-tm/flutter_v2ray/blob/master/example/lib/main.dart)
 

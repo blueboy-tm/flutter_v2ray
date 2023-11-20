@@ -9,7 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 
 import java.util.ArrayList;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -30,7 +31,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
     private EventChannel.EventSink vpnStatusSink;
     private Activity activity;
     private BroadcastReceiver v2rayBroadCastReceiver;
-
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
@@ -66,7 +67,13 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                     result.success(null);
                     break;
                 case "getServerDelay":
-                    result.success(V2rayController.getV2rayServerDelay(call.argument("config")));
+                    executor.submit(() -> {
+                        try {
+                            result.success(V2rayController.getV2rayServerDelay(call.argument("config")));
+                        } catch (Exception e) {
+                            result.success(-1);
+                        }
+                    });
                     break;
                 case "requestPermission":
                     final Intent request = VpnService.prepare(activity);
@@ -88,6 +95,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
         vpnControlMethod.setMethodCallHandler(null);
         vpnStatusEvent.setStreamHandler(null);
         activity.unregisterReceiver(v2rayBroadCastReceiver);
+        executor.shutdown();
     }
 
     @Override

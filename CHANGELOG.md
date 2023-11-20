@@ -1,3 +1,7 @@
+## 1.0.5
+
+* fix #10 issue: notification service
+
 ## 1.0.4
 
 * fix getServerDelay

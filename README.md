@@ -21,9 +21,9 @@
 
 
 ## Change logs
-### 1.0.4
+### 1.0.5
 
-* fix getServerDelay
+* fix #10 issue: notification service
 
 #### [see more](./CHANGELOG.md)
 

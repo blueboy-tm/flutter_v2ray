@@ -1,3 +1,7 @@
+## 1.0.4
+
+* fix getServerDelay
+
 ## 1.0.3
 
 * fix vless fingerprint 

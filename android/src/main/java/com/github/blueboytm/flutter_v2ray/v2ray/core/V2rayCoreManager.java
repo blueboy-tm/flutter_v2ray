@@ -187,9 +187,6 @@ public final class V2rayCoreManager {
             v2RayPoint.setDomainName(v2rayConfig.CONNECTED_V2RAY_SERVER_ADDRESS + ":" + v2rayConfig.CONNECTED_V2RAY_SERVER_PORT);
             v2RayPoint.runLoop(false);
             V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_CONNECTED;
-            if (isV2rayCoreRunning()) {
-                showNotification(v2rayConfig);
-            }
         } catch (Exception e) {
             Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed =>", e);
             return false;

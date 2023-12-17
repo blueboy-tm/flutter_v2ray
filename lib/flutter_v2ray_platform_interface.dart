@@ -50,4 +50,12 @@ abstract class FlutterV2rayPlatform extends PlatformInterface {
   Future<int> getServerDelay({required String config}) {
     throw UnimplementedError('getServerDelay() has not been implemented.');
   }
+
+  Future<int> getConnectedV2rayServerDelay() {
+    throw UnimplementedError('getConnectedV2rayServerDelay() has not been implemented.');
+  }
+
+  Future<String> getCoreVersion() {
+    throw UnimplementedError('getCoreVersion() has not been implemented.');
+  }
 }

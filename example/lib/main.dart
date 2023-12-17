@@ -105,6 +105,28 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void coreVersion() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Core Version: ${(await flutterV2ray.getCoreVersion())}',
+        ),
+      ),
+    );
+  }
+
+  void connectedServerDelay() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Server Delay: ${(await flutterV2ray.getConnectedV2rayServerDelay())}ms',
+        ),
+      ),
+    );
+  }
+
+
+
   @override
   void initState() {
     super.initState();
@@ -199,6 +221,15 @@ class _HomePageState extends State<HomePage> {
                     onPressed: delay,
                     child: const Text('Server Delay'),
                   ),
+                  ElevatedButton(
+                    onPressed: coreVersion,
+                    child: const Text('Core Version'),
+                  ),
+                  ElevatedButton(
+                    onPressed: connectedServerDelay,
+                    child: const Text('Connected Server Delay'),
+                  ),
+
                 ],
               ),
             ),

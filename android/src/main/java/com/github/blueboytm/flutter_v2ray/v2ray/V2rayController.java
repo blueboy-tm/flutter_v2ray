@@ -6,11 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
-import android.widget.TextView;
-import android.util.Log;
-
 
 import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
 import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayProxyOnlyService;
@@ -21,6 +20,7 @@ import libv2ray.Libv2ray;
 
 public class V2rayController {
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     public static void init(final Context context, final int app_icon, final String app_name) {
         Utilities.copyAssets(context);
         AppConfigs.APPLICATION_ICON = app_icon;
@@ -75,27 +75,51 @@ public class V2rayController {
         AppConfigs.V2RAY_CONFIG = null;
     }
 
-    public static void getConnectedV2rayServerDelay(final Context context, final TextView tvDelay) {
+
+    public static long getConnectedV2rayServerDelay(final Context context) {
+        if(V2rayController.getConnectionState() != AppConfigs.V2RAY_STATES.V2RAY_CONNECTED){
+             return  -2;
+        }
         Intent check_delay;
         if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
             check_delay = new Intent(context, V2rayProxyOnlyService.class);
         } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
             check_delay = new Intent(context, V2rayVPNService.class);
         } else {
-            return;
+            return 0;
         }
+
+        final long[] delayPing = {0};
+        final CountDownLatch latch = new CountDownLatch(1);
+
         check_delay.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY);
         context.startService(check_delay);
-        context.registerReceiver(new BroadcastReceiver() {
-            @SuppressLint("SetTextI18n")
+
+        BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context arg0, Intent arg1) {
                 String delay = arg1.getExtras().getString("DELAY");
-                tvDelay.setText("connected server delay : " + delay);
+                delayPing[0] = Long.parseLong(delay);
                 context.unregisterReceiver(this);
+                latch.countDown(); // کاهش شمارنده
             }
-        }, new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY"));
+        };
+
+        context.registerReceiver(receiver, new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY"));
+
+        try {
+            boolean received = latch.await(3000, TimeUnit.MILLISECONDS); // انتظار حداکثر 3 ثانیه
+            if (!received) {
+                // پیام در زمان مشخص شده دریافت نشده است
+                return -1;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return delayPing[0];
     }
+
 
     public static long getV2rayServerDelay(final String config) {
         return V2rayCoreManager.getInstance().getV2rayServerDelay(config);
@@ -105,7 +129,7 @@ public class V2rayController {
         return AppConfigs.V2RAY_CONNECTION_MODE;
     }
 
-    public static AppConfigs.V2RAY_STATES getConnectionState() {
+    public static  AppConfigs.V2RAY_STATES getConnectionState() {
         return AppConfigs.V2RAY_STATE;
     }
 

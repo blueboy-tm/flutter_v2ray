@@ -177,6 +177,7 @@ public final class V2rayCoreManager {
         }
         try {
             Libv2ray.testConfig(v2rayConfig.V2RAY_FULL_JSON_CONFIG);
+            
         } catch (Exception e) {
             sendDisconnectedBroadCast();
             Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed => v2ray json config not valid.");
@@ -187,6 +188,10 @@ public final class V2rayCoreManager {
             v2RayPoint.setDomainName(v2rayConfig.CONNECTED_V2RAY_SERVER_ADDRESS + ":" + v2rayConfig.CONNECTED_V2RAY_SERVER_PORT);
             v2RayPoint.runLoop(false);
             V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_CONNECTED;
+
+            if (isV2rayCoreRunning()) {
+                showNotification(v2rayConfig);
+            }
         } catch (Exception e) {
             Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed =>", e);
             return false;
@@ -204,6 +209,9 @@ public final class V2rayCoreManager {
                 Log.e(V2rayCoreManager.class.getSimpleName(), "stopCore failed => v2ray core not running.");
             }
             sendDisconnectedBroadCast();
+
+            // hide notification
+            hideNotification();
         } catch (Exception e) {
             Log.e(V2rayCoreManager.class.getSimpleName(), "stopCore failed =>", e);
         }
@@ -256,18 +264,26 @@ public final class V2rayCoreManager {
         return mNotificationManager;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    private String createNotificationChannelID(final String Application_name) {
-        String notification_channel_id = "DEV7_DEV_V_E_CH_ID";
-        NotificationChannel notificationChannel = new NotificationChannel(
-                notification_channel_id, Application_name + " Background Service", NotificationManager.IMPORTANCE_HIGH);
-        notificationChannel.setLightColor(Color.BLUE);
-        notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-        notificationChannel.setImportance(NotificationManager.IMPORTANCE_NONE);
-        Objects.requireNonNull(getNotificationManager()).createNotificationChannel(notificationChannel);
-        return notification_channel_id;
-    }
+@RequiresApi(api = Build.VERSION_CODES.O)
+public String createNotificationChannelID(final String Application_name) {
+    String notification_channel_id = "DEV7_DEV_V_E_CH_ID";
 
+    // Create the notification channel
+    NotificationChannel notificationChannel = new NotificationChannel(
+        notification_channel_id, Application_name + " Background Service", NotificationManager.IMPORTANCE_HIGH);
+
+    // Set channel properties
+    notificationChannel.setLightColor(Color.BLUE);
+    notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+    notificationChannel.setImportance(NotificationManager.IMPORTANCE_HIGH);
+    // Enable showing buttons on the notification
+    notificationChannel.setShowBadge(false);
+
+    // Register the channel with the system
+    Objects.requireNonNull(getNotificationManager()).createNotificationChannel(notificationChannel);
+
+    return notification_channel_id;
+}
     private int judgeForNotificationFlag() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
@@ -276,35 +292,66 @@ public final class V2rayCoreManager {
         }
     }
 
-    private void showNotification(final V2rayConfig v2rayConfig) {
+private void showNotification(final V2rayConfig v2rayConfig) {
+    if (v2rayServicesListener == null) {
+        return;
+    }
+
+    // Intent to open the main application page
+    Intent mainIntent = new Intent(Intent.ACTION_MAIN);
+    mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+    mainIntent.setPackage(v2rayServicesListener.getService().getPackageName());
+    mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+    PendingIntent mainPendingIntent = PendingIntent.getActivity(
+            v2rayServicesListener.getService(), 0, mainIntent, judgeForNotificationFlag());
+
+    // Intent to stop the VPN service
+    Intent stopVpnIntent = new Intent(v2rayServicesListener.getService(), V2rayCoreManager.class);
+    stopVpnIntent.setAction("com.github.blueboytm.flutter_v2ray.STOP_VPN");
+    PendingIntent stopVpnPendingIntent = PendingIntent.getService(
+            v2rayServicesListener.getService(), 0, stopVpnIntent, judgeForNotificationFlag());
+
+    // Create the notification channel for Android O and above
+    String notificationChannelID = "";
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        notificationChannelID = createNotificationChannelID(v2rayConfig.APPLICATION_NAME);
+    }
+
+    // Set up the Notification Builder
+    NotificationCompat.Builder mBuilder =
+            new NotificationCompat.Builder(v2rayServicesListener.getService(), notificationChannelID);
+
+    mBuilder.setSmallIcon(v2rayConfig.APPLICATION_ICON)
+            .setContentTitle("Connected To " + v2rayConfig.REMARK)
+            .setContentText("Tap to open application")
+            .setOngoing(true)
+            .setShowWhen(false)
+            .setOnlyAlertOnce(true)
+            .addAction(new NotificationCompat.Action(
+                    0, "Stop VPN", stopVpnPendingIntent))
+            .addAction(new NotificationCompat.Action(
+                    0, "Open App", mainPendingIntent))
+            .setContentIntent(mainPendingIntent) // Main intent when the notification is tapped
+            .setDefaults(NotificationCompat.FLAG_ONLY_ALERT_ONCE);
+
+    // Start the service in the foreground with the notification
+    v2rayServicesListener.getService().startForeground(1, mBuilder.build());
+}
+
+    // hide  notification
+    private void hideNotification() {
         if (v2rayServicesListener == null) {
             return;
         }
-        Intent launchIntent = v2rayServicesListener.getService().getPackageManager().
-                getLaunchIntentForPackage(v2rayServicesListener.getService().getApplicationInfo().packageName);
-        launchIntent.setAction("FROM_DISCONNECT_BTN");
-        launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent notificationContentPendingIntent = PendingIntent.getActivity(
-                v2rayServicesListener.getService(), 0, launchIntent, judgeForNotificationFlag());
-        String notificationChannelID = "";
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            notificationChannelID = createNotificationChannelID(v2rayConfig.APPLICATION_NAME);
-        }
-        NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(v2rayServicesListener.getService(), notificationChannelID);
-        mBuilder.setSmallIcon(v2rayConfig.APPLICATION_ICON)
-                .setContentTitle("Connected To " + v2rayConfig.REMARK)
-                .setContentText("tap to open application")
-                .setOngoing(true)
-                .setShowWhen(false)
-                .setOnlyAlertOnce(true)
-                .setContentIntent(notificationContentPendingIntent)
-                .setDefaults(NotificationCompat.FLAG_ONLY_ALERT_ONCE);
-        v2rayServicesListener.getService().startForeground(1, mBuilder.build());
+        v2rayServicesListener.getService().stopForeground(true);
+         
     }
+    
 
     public boolean isV2rayCoreRunning() {
         if (v2RayPoint != null) {
+
             return v2RayPoint.getIsRunning();
         }
         return false;

@@ -93,6 +93,18 @@ class FlutterV2ray {
     return await FlutterV2rayPlatform.instance.getServerDelay(config: config);
   }
 
+  /// This method returns the real server delay of the connected V2Ray server.
+  // -1 means v2ray is successfully connected.
+  // -2 means v2ray client is not started.
+  Future<int> getConnectedV2rayServerDelay() async {
+    return await FlutterV2rayPlatform.instance.getConnectedV2rayServerDelay();
+  }
+
+  /// Get core version
+  Future<String> getCoreVersion() async {
+    return await FlutterV2rayPlatform.instance.getCoreVersion();
+  }
+
   /// parse V2RayURL object from V2Ray share link
   ///
   /// like vmess://, vless://, trojan://, ss://, socks://

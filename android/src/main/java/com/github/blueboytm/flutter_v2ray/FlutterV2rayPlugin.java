@@ -84,6 +84,9 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                         }
                     });
                     break;
+                case "getCoreVersion":
+                    result.success(V2rayController.getCoreVersion());
+                    break;
                 case "requestPermission":
                     final Intent request = VpnService.prepare(activity);
                     if (request != null) {

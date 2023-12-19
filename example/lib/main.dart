@@ -45,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   var v2rayStatus = ValueNotifier<V2RayStatus>(V2RayStatus());
   final bypassSubnetController = TextEditingController();
   List<String> bypassSubnets = [];
+  String? coreVersion;
 
   String remark = "Default Remark";
 
@@ -99,10 +100,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   void delay() async {
+    late int delay;
+    if (v2rayStatus.value.state == 'CONNECTED') {
+      delay = await flutterV2ray.getConnectedServerDelay();
+    } else {
+      delay = await flutterV2ray.getServerDelay(config: config.text);
+    }
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${(await flutterV2ray.getServerDelay(config: config.text))}ms',
+          '${delay}ms',
         ),
       ),
     );
@@ -153,7 +161,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    flutterV2ray.initializeV2Ray();
+    flutterV2ray.initializeV2Ray().then((value) async {
+      coreVersion = await flutterV2ray.getCoreVersion();
+      setState(() {});
+    });
   }
 
   @override
@@ -217,7 +228,9 @@ class _HomePageState extends State<HomePage> {
                         Text(value.download),
                         const Text('↓'),
                       ],
-                    )
+                    ),
+                    const SizedBox(height: 10),
+                    Text('Core Version: $coreVersion'),
                   ],
                 );
               },

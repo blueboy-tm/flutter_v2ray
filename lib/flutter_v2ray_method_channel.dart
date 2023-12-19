@@ -70,4 +70,9 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   Future<bool> requestPermission() async {
     return (await methodChannel.invokeMethod('requestPermission')) ?? false;
   }
+
+  @override
+  Future<String> getCoreVersion() async {
+    return await methodChannel.invokeMethod('getCoreVersion');
+  }
 }

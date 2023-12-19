@@ -37,12 +37,14 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
     required String remark,
     required String config,
     List<String>? blockedApps,
+    List<String>? bypassSubnets,
     bool proxyOnly = false,
   }) async {
     await methodChannel.invokeMethod('startV2Ray', {
       "remark": remark,
       "config": config,
       "blocked_apps": blockedApps,
+      "bypass_subnets": bypassSubnets,
       "proxy_only": proxyOnly,
     });
   }

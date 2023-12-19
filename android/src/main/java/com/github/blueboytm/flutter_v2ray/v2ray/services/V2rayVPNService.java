@@ -92,7 +92,19 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
         builder.setSession(v2rayConfig.REMARK);
         builder.setMtu(1500);
         builder.addAddress("26.26.26.1", 30);
-        builder.addRoute("0.0.0.0", 0);
+
+        if (v2rayConfig.BYPASS_SUBNETS == null || v2rayConfig.BYPASS_SUBNETS.size() <= 0) {
+            builder.addRoute("0.0.0.0", 0);
+        }else {
+            for (String subnet : v2rayConfig.BYPASS_SUBNETS) {
+                String[] parts = subnet.split("/");
+                if (parts.length == 2) {
+                    String address = parts[0];
+                    int prefixLength = Integer.parseInt(parts[1]);
+                    builder.addRoute(address, prefixLength);
+                }
+            }
+        }
         if (v2rayConfig.BLOCKED_APPS != null) {
             for (int i = 0; i < v2rayConfig.BLOCKED_APPS.size(); i++) {
                 try {

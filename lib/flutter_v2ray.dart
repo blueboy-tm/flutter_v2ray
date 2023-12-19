@@ -49,6 +49,16 @@ class FlutterV2ray {
   ///
   ///   specifically for Android.
   ///
+  /// bypassSubnets:
+  /// 
+  ///     [Default = 0.0.0.0/0]
+  /// 
+  ///     Add at least one route if you want the system to send traffic through the VPN interface.
+  /// 
+  ///     Routes filter by destination addresses.
+  /// 
+  ///     To accept all traffic, set an open route such as 0.0.0.0/0 or ::/0.
+  /// 
   /// proxyOnly:
   ///
   ///   If it is true, only the v2ray proxy will be executed,
@@ -58,6 +68,7 @@ class FlutterV2ray {
     required String remark,
     required String config,
     List<String>? blockedApps,
+    List<String>? bypassSubnets,
     bool proxyOnly = false,
   }) async {
     try {
@@ -73,6 +84,7 @@ class FlutterV2ray {
       config: config,
       blockedApps: blockedApps,
       proxyOnly: proxyOnly,
+      bypassSubnets: bypassSubnets,
     );
   }
 

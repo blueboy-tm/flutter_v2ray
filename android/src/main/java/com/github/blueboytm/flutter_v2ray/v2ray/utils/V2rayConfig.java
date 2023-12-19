@@ -10,6 +10,7 @@ public class V2rayConfig implements Serializable {
     public int LOCAL_SOCKS5_PORT = 10808;
     public int LOCAL_HTTP_PORT = 10809;
     public ArrayList<String> BLOCKED_APPS = null;
+    public ArrayList<String> BYPASS_SUBNETS = null;
     public String V2RAY_FULL_JSON_CONFIG = null;
     public boolean ENABLE_TRAFFIC_STATICS = false;
     public String REMARK = "";

@@ -298,7 +298,7 @@ public final class V2rayCoreManager {
         mBuilder.setSmallIcon(v2rayConfig.APPLICATION_ICON)
                 .setContentTitle(v2rayConfig.REMARK)
                 .setContentText("tap to open application")
-                .setContentIntent(notificationContentPendingIntent)
+                .setContentIntent(notificationContentPendingIntent);
         v2rayServicesListener.getService().startForeground(1, mBuilder.build());
     }
 

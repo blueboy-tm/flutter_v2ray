@@ -187,6 +187,9 @@ public final class V2rayCoreManager {
             v2RayPoint.setDomainName(v2rayConfig.CONNECTED_V2RAY_SERVER_ADDRESS + ":" + v2rayConfig.CONNECTED_V2RAY_SERVER_PORT);
             v2RayPoint.runLoop(false);
             V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_CONNECTED;
+            if (isV2rayCoreRunning()) {
+                showNotification(v2rayConfig);
+            }
         } catch (Exception e) {
             Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed =>", e);
             return false;
@@ -260,10 +263,9 @@ public final class V2rayCoreManager {
     private String createNotificationChannelID(final String Application_name) {
         String notification_channel_id = "DEV7_DEV_V_E_CH_ID";
         NotificationChannel notificationChannel = new NotificationChannel(
-                notification_channel_id, Application_name + " Background Service", NotificationManager.IMPORTANCE_HIGH);
+                notification_channel_id, Application_name + " Background Service", NotificationManager.IMPORTANCE_DEFAULT);
         notificationChannel.setLightColor(Color.BLUE);
-        notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-        notificationChannel.setImportance(NotificationManager.IMPORTANCE_NONE);
+        notificationChannel.setImportance(NotificationManager.IMPORTANCE_DEFAULT);
         Objects.requireNonNull(getNotificationManager()).createNotificationChannel(notificationChannel);
         return notification_channel_id;
     }
@@ -290,16 +292,13 @@ public final class V2rayCoreManager {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             notificationChannelID = createNotificationChannelID(v2rayConfig.APPLICATION_NAME);
         }
+    
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(v2rayServicesListener.getService(), notificationChannelID);
         mBuilder.setSmallIcon(v2rayConfig.APPLICATION_ICON)
-                .setContentTitle("Connected To " + v2rayConfig.REMARK)
+                .setContentTitle(v2rayConfig.REMARK)
                 .setContentText("tap to open application")
-                .setOngoing(true)
-                .setShowWhen(false)
-                .setOnlyAlertOnce(true)
                 .setContentIntent(notificationContentPendingIntent)
-                .setDefaults(NotificationCompat.FLAG_ONLY_ALERT_ONCE);
         v2rayServicesListener.getService().startForeground(1, mBuilder.build());
     }
 

@@ -63,7 +63,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                     result.success(null);
                     break;
                 case "initializeV2Ray":
-                    V2rayController.init(binding.getApplicationContext(), 0, "Flutter V2ray");
+                    V2rayController.init(binding.getApplicationContext(), binding.getApplicationContext().getResources().getIdentifier("ic_launcher", "mipmap", binding.getApplicationContext().getPackageName()), "Flutter V2ray");
                     result.success(null);
                     break;
                 case "getServerDelay":

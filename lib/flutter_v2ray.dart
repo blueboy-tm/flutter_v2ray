@@ -105,6 +105,11 @@ class FlutterV2ray {
     return await FlutterV2rayPlatform.instance.getServerDelay(config: config);
   }
 
+  /// This method returns the connected server delay.
+  Future<int> getConnectedServerDelay() async {
+    return await FlutterV2rayPlatform.instance.getConnectedServerDelay();
+  }
+
   /// parse V2RayURL object from V2Ray share link
   ///
   /// like vmess://, vless://, trojan://, ss://, socks://

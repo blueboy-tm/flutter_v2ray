@@ -6,9 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
-import android.widget.TextView;
 import android.util.Log;
-
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import java.util.ArrayList;
 
@@ -75,26 +75,43 @@ public class V2rayController {
         AppConfigs.V2RAY_CONFIG = null;
     }
 
-    public static void getConnectedV2rayServerDelay(final Context context, final TextView tvDelay) {
+    public static long getConnectedV2rayServerDelay(Context context) {
+        if(V2rayController.getConnectionState() != AppConfigs.V2RAY_STATES.V2RAY_CONNECTED){
+             return  -1;
+        }
         Intent check_delay;
         if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
             check_delay = new Intent(context, V2rayProxyOnlyService.class);
         } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
             check_delay = new Intent(context, V2rayVPNService.class);
         } else {
-            return;
+            return -1;
         }
+        final long[] delay = {-1};
+
+        final CountDownLatch latch = new CountDownLatch(1);
         check_delay.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY);
         context.startService(check_delay);
-        context.registerReceiver(new BroadcastReceiver() {
-            @SuppressLint("SetTextI18n")
+        BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context arg0, Intent arg1) {
-                String delay = arg1.getExtras().getString("DELAY");
-                tvDelay.setText("connected server delay : " + delay);
+                String delayString = arg1.getExtras().getString("DELAY");
+                delay[0] = Long.parseLong(delayString);
                 context.unregisterReceiver(this);
+                latch.countDown();
             }
-        }, new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY"));
+        };
+
+        context.registerReceiver(receiver, new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY"));
+        try {
+            boolean received = latch.await(3000, TimeUnit.MILLISECONDS);
+            if (!received) {
+                return -1;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return delay[0];
     }
 
     public static long getV2rayServerDelay(final String config) {

@@ -1,3 +1,11 @@
+## 1.0.6
+
+* fix #24 issue: fix notification and background service
+* fix #11 issue: add bypassSubnets for bypass lan traffic
+* add getConnectedServerDelay
+* add getCoreVersion
+* optimize java codes
+
 ## 1.0.5
 
 * fix #10 issue: notification service

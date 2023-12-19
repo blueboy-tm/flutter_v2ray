@@ -22,9 +22,13 @@
 
 
 ## Change logs
-### 1.0.5
+### 1.0.6
 
-* fix #10 issue: notification service
+* fix #24 issue: fix notification and background service
+* fix #11 issue: add bypassSubnets for bypass lan traffic
+* add getConnectedServerDelay
+* add getCoreVersion
+* optimize java codes
 
 #### [see more](./CHANGELOG.md)
 

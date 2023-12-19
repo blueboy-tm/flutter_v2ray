@@ -2,7 +2,6 @@ package com.github.blueboytm.flutter_v2ray.v2ray.core;
 
 import static com.github.blueboytm.flutter_v2ray.v2ray.utils.Utilities.getUserAssetsPath;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;

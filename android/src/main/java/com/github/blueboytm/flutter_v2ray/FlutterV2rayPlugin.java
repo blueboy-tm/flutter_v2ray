@@ -1,6 +1,8 @@
 package com.github.blueboytm.flutter_v2ray;
 
 import androidx.annotation.NonNull;
+
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.app.Activity;
 import android.net.VpnService;
@@ -31,8 +33,9 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
     private EventChannel.EventSink vpnStatusSink;
     private Activity activity;
     private BroadcastReceiver v2rayBroadCastReceiver;
-    private ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    @SuppressLint("DiscouragedApi")
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
         vpnControlMethod = new MethodChannel(binding.getBinaryMessenger(), "flutter_v2ray");
@@ -52,7 +55,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
         vpnControlMethod.setMethodCallHandler((call, result) -> {
             switch (call.method) {
                 case "startV2Ray":
-                    if (call.argument("proxy_only")){
+                    if (Boolean.TRUE.equals(call.argument("proxy_only"))){
                         V2rayController.changeConnectionMode(AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY);
                     } 
                     V2rayController.StartV2ray(binding.getApplicationContext(), call.argument("remark"),  call.argument("config"), call.argument("blocked_apps"), call.argument("bypass_subnets"));
@@ -117,7 +120,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
             @Override
             public void onReceive(Context context, Intent intent) {
                 try {
-                    ArrayList<String> list = new ArrayList<String>();
+                    ArrayList<String> list = new ArrayList<>();
                     list.add(intent.getExtras().getString("DURATION"));
                     list.add(intent.getExtras().getString("UPLOAD_SPEED"));
                     list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
@@ -126,7 +129,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                     list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
                     vpnStatusSink.success(list);
                 }
-                catch(Exception e) {}
+                catch(Exception ignored) {}
             }
         };
         activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
@@ -144,7 +147,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
             @Override
             public void onReceive(Context context, Intent intent) {
                try {
-                    ArrayList<String> list = new ArrayList<String>();
+                    ArrayList<String> list = new ArrayList<>();
                     list.add(intent.getExtras().getString("DURATION"));
                     list.add(intent.getExtras().getString("UPLOAD_SPEED"));
                     list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
@@ -153,7 +156,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                     list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
                     vpnStatusSink.success(list);
                 }
-                catch(Exception e) {}
+                catch(Exception ignored) {}
             }
         };
         activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));

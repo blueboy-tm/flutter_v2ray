@@ -97,7 +97,7 @@ public final class V2rayCoreManager {
     public void setUpListener(Service targetService) {
         try {
             v2rayServicesListener = (V2rayServicesListener) targetService;
-            Libv2ray.initV2Env(getUserAssetsPath(targetService.getApplicationContext()));
+            Libv2ray.initV2Env(getUserAssetsPath(targetService.getApplicationContext()), "");
             isLibV2rayCoreInitialized = true;
             SERVICE_DURATION = "00:00:00";
             seconds = 0;

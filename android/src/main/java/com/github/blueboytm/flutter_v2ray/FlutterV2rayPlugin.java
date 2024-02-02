@@ -107,10 +107,12 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        vpnControlMethod.setMethodCallHandler(null);
-        vpnStatusEvent.setStreamHandler(null);
-        activity.unregisterReceiver(v2rayBroadCastReceiver);
-        executor.shutdown();
+        if (v2rayBroadCastReceiver != null) {
+            vpnControlMethod.setMethodCallHandler(null);
+            vpnStatusEvent.setStreamHandler(null);
+            activity.unregisterReceiver(v2rayBroadCastReceiver);
+            executor.shutdown();
+        }
     }
 
     @Override

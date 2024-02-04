@@ -43,7 +43,7 @@
 
 | Platform  | Status    | Info |
 | --------- | --------- | ---- |
-| Android   | Done ✅   | Xray v24 v1.8.1.4 |
+| Android   | Done ✅   | Xray 1.8.7 |
 | IOS       | Soon ❎   | - |
 | Desktop   | Soon ❎   | - |
 

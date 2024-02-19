@@ -44,7 +44,7 @@
 | --------- | --------- | ---- |
 | Android   | Done ✅   | Xray 1.8.7 |
 | IOS       | Soon ❎   | - |
-| Desktop   | Soon ❎   | - |
+| Desktop   | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy-tm) |
 
 <br>
 

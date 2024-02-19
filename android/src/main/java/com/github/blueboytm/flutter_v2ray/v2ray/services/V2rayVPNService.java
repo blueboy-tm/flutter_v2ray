@@ -20,6 +20,10 @@ import com.github.blueboytm.flutter_v2ray.v2ray.interfaces.V2rayServicesListener
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.AppConfigs;
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.V2rayConfig;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class V2rayVPNService extends VpnService implements V2rayServicesListener {
     private ParcelFileDescriptor mInterface;
     private Process process;
@@ -113,6 +117,17 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
                     //ignore
                 }
             }
+        }
+        try {
+            JSONObject json = new JSONObject(v2rayConfig.V2RAY_FULL_JSON_CONFIG);
+            JSONObject dnsObject = json.getJSONObject("dns");
+            JSONArray serversArray = dnsObject.getJSONArray("servers");
+            for (int i = 0; i < serversArray.length(); i++) {
+                String server = serversArray.getString(i);
+                builder.addDnsServer(server);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
         try {
             mInterface.close();

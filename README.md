@@ -22,13 +22,12 @@
 
 
 ## Change logs
-### 1.0.6
+### 1.0.7
 
-* fix #24 issue: fix notification and background service
-* fix #11 issue: add bypassSubnets for bypass lan traffic
-* add getConnectedServerDelay
-* add getCoreVersion
-* optimize java codes
+* fix v2rayBroadCastReceiver null exception
+* fix #35: registerReceiver error
+* update libv2ray to 1.8.7
+* fix #43: Adding DNS servers to the VPN service
 
 #### [see more](./CHANGELOG.md)
 

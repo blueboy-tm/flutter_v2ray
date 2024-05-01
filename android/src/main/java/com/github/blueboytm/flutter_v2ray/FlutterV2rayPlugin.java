@@ -7,6 +7,7 @@ import android.content.Context;
 import android.app.Activity;
 import android.net.VpnService;
 import android.content.Intent;
+import android.os.Build;
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 
@@ -134,7 +135,12 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                 catch(Exception ignored) {}
             }
         };
-        activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"), Context.RECEIVER_EXPORTED);
+        }else {
+             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+        }
+        // activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
     }
 
     @Override
@@ -161,7 +167,12 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                 catch(Exception ignored) {}
             }
         };
-        activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"), Context.RECEIVER_EXPORTED);
+        }else {
+             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+        }
+        // activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
     }
 
     @Override

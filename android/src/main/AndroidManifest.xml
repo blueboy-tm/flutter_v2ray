@@ -23,5 +23,12 @@
               android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
               android:value="true" />
       </service>
+      <receiver
+            android:name=".v2ray.V2rayReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="V2RAY_CONNECTION_INFO" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

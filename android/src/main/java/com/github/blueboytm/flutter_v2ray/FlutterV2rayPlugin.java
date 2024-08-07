@@ -131,17 +131,17 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                     list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
                     list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
                     vpnStatusSink.success(list);
-                }
-                catch(Exception ignored) {}
+                } catch (Exception ignored) {}
             }
         };
+        IntentFilter filter = new IntentFilter("V2RAY_CONNECTION_INFO");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"), Context.RECEIVER_EXPORTED);
-        }else {
-             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+            activity.registerReceiver(v2rayBroadCastReceiver, filter, Context.RECEIVER_EXPORTED);
+        } else {
+            activity.registerReceiver(v2rayBroadCastReceiver, filter);
         }
-        // activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
     }
+
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
@@ -154,7 +154,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
         v2rayBroadCastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-               try {
+                try {
                     ArrayList<String> list = new ArrayList<>();
                     list.add(intent.getExtras().getString("DURATION"));
                     list.add(intent.getExtras().getString("UPLOAD_SPEED"));
@@ -163,16 +163,16 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                     list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
                     list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
                     vpnStatusSink.success(list);
-                }
-                catch(Exception ignored) {}
+                } 
+                catch (Exception ignored) {}
             }
         };
+        IntentFilter filter = new IntentFilter("V2RAY_CONNECTION_INFO");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"), Context.RECEIVER_EXPORTED);
-        }else {
-             activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+            activity.registerReceiver(v2rayBroadCastReceiver, filter, Context.RECEIVER_EXPORTED);
+        } else {
+            activity.registerReceiver(v2rayBroadCastReceiver, filter);
         }
-        // activity.registerReceiver(v2rayBroadCastReceiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
     }
 
     @Override

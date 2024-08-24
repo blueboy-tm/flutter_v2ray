@@ -125,10 +125,10 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                 try {
                     ArrayList<String> list = new ArrayList<>();
                     list.add(intent.getExtras().getString("DURATION"));
-                    list.add(intent.getExtras().getString("UPLOAD_SPEED"));
-                    list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
-                    list.add(intent.getExtras().getString("UPLOAD_TRAFFIC"));
-                    list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
+                    list.add(String.valueOf(intent.getExtras().getFloat("UPLOAD_SPEED")));
+                    list.add(String.valueOf(intent.getExtras().getFloat("DOWNLOAD_SPEED")));
+                    list.add(String.valueOf(intent.getExtras().getFloat("UPLOAD_TRAFFIC")));
+                    list.add(String.valueOf(intent.getExtras().getFloat("DOWNLOAD_TRAFFIC")));
                     list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
                     vpnStatusSink.success(list);
                 } catch (Exception ignored) {}
@@ -157,10 +157,10 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                 try {
                     ArrayList<String> list = new ArrayList<>();
                     list.add(intent.getExtras().getString("DURATION"));
-                    list.add(intent.getExtras().getString("UPLOAD_SPEED"));
-                    list.add(intent.getExtras().getString("DOWNLOAD_SPEED"));
-                    list.add(intent.getExtras().getString("UPLOAD_TRAFFIC"));
-                    list.add(intent.getExtras().getString("DOWNLOAD_TRAFFIC"));
+                    list.add(String.valueOf(intent.getExtras().getFloat("UPLOAD_SPEED")));
+                    list.add(String.valueOf(intent.getExtras().getFloat("DOWNLOAD_SPEED")));
+                    list.add(String.valueOf(intent.getExtras().getFloat("UPLOAD_TRAFFIC")));
+                    list.add(String.valueOf(intent.getExtras().getFloat("DOWNLOAD_TRAFFIC")));
                     list.add(intent.getExtras().getSerializable("STATE").toString().substring(6));
                     vpnStatusSink.success(list);
                 } 

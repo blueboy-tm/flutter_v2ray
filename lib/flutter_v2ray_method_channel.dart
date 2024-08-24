@@ -19,10 +19,10 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
       if (event != null) {
         onStatusChanged.call(V2RayStatus(
           duration: event[0],
-          uploadSpeed: double.parse(event[1]).toInt(),
-          downloadSpeed: double.parse(event[2]).toInt(),
-          upload: double.parse(event[3]).toInt(),
-          download: double.parse(event[4]).toInt(),
+          uploadSpeed: int.parse(event[1]),
+          downloadSpeed: int.parse(event[2]),
+          upload: int.parse(event[3]),
+          download: int.parse(event[4]),
           state: event[5],
         ));
       }

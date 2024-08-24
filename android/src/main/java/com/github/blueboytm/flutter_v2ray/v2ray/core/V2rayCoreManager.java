@@ -223,10 +223,10 @@ public final class V2rayCoreManager {
             Intent connection_info_intent = new Intent("V2RAY_CONNECTION_INFO");
             connection_info_intent.putExtra("STATE", V2rayCoreManager.getInstance().V2RAY_STATE);
             connection_info_intent.putExtra("DURATION", SERVICE_DURATION);
-            connection_info_intent.putExtra("UPLOAD_SPEED", 0);
-            connection_info_intent.putExtra("DOWNLOAD_SPEED", 0);
-            connection_info_intent.putExtra("UPLOAD_TRAFFIC", 0);
-            connection_info_intent.putExtra("DOWNLOAD_TRAFFIC", 0);
+            connection_info_intent.putExtra("UPLOAD_SPEED", uploadSpeed);
+            connection_info_intent.putExtra("DOWNLOAD_SPEED", uploadSpeed);
+            connection_info_intent.putExtra("UPLOAD_TRAFFIC", uploadSpeed);
+            connection_info_intent.putExtra("DOWNLOAD_TRAFFIC", uploadSpeed);
             try {
                 v2rayServicesListener.getService().getApplicationContext().sendBroadcast(connection_info_intent);
             } catch (Exception e) {

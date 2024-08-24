@@ -175,7 +175,7 @@ public final class V2rayCoreManager {
             stopCore();
         }
         try {
-            Libv2ray.testConfig(v2rayConfig.V2RAY_FULL_JSON_CONFIG);
+            // Libv2ray.testConfig(v2rayConfig.V2RAY_FULL_JSON_CONFIG);
         } catch (Exception e) {
             sendDisconnectedBroadCast();
             Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed => v2ray json config not valid.");
@@ -310,13 +310,13 @@ public final class V2rayCoreManager {
 
     public Long getConnectedV2rayServerDelay() {
         try {
-            return v2RayPoint.measureDelay();
+            return v2RayPoint.measureDelay(AppConfigs.DELAY_URL);
         } catch (Exception e) {
             return -1L;
         }
     }
 
-    public Long getV2rayServerDelay(final String config) {
+    public Long getV2rayServerDelay(final String config, final String url) {
         try {
             try {
                 JSONObject config_json = new JSONObject(config);
@@ -324,10 +324,10 @@ public final class V2rayCoreManager {
                 new_routing_json.remove("rules");
                 config_json.remove("routing");
                 config_json.put("routing", new_routing_json);
-                return Libv2ray.measureOutboundDelay(config_json.toString());
+                return Libv2ray.measureOutboundDelay(config_json.toString(), url);
             } catch (Exception json_error) {
                 Log.e("getV2rayServerDelay", json_error.toString());
-                return Libv2ray.measureOutboundDelay(config);
+                return Libv2ray.measureOutboundDelay(config, url);
             }
         } catch (Exception e) {
             Log.e("getV2rayServerDelayCore", e.toString());

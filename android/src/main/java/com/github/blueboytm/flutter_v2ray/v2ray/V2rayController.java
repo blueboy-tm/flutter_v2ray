@@ -121,8 +121,8 @@ public class V2rayController {
         return delay[0];
     }
 
-    public static long getV2rayServerDelay(final String config) {
-        return V2rayCoreManager.getInstance().getV2rayServerDelay(config);
+    public static long getV2rayServerDelay(final String config, final String url) {
+        return V2rayCoreManager.getInstance().getV2rayServerDelay(config, url);
     }
 
     public static AppConfigs.V2RAY_CONNECTION_MODES getConnectionMode() {

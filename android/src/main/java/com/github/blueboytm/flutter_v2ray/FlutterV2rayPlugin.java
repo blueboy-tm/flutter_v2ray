@@ -73,7 +73,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                 case "getServerDelay":
                     executor.submit(() -> {
                         try {
-                            result.success(V2rayController.getV2rayServerDelay(call.argument("config")));
+                            result.success(V2rayController.getV2rayServerDelay(call.argument("config"), call.argument("url")));
                         } catch (Exception e) {
                             result.success(-1);
                         }
@@ -82,6 +82,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware {
                 case "getConnectedServerDelay":
                     executor.submit(() -> {
                         try {
+                            AppConfigs.DELAY_URL = call.argument("url");
                             result.success(V2rayController.getConnectedV2rayServerDelay(binding.getApplicationContext()));
                         } catch (Exception e) {
                             result.success(-1);

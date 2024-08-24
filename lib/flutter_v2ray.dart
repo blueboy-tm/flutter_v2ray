@@ -94,7 +94,9 @@ class FlutterV2ray {
   }
 
   /// This method returns the real server delay of the configuration.
-  Future<int> getServerDelay({required String config}) async {
+  Future<int> getServerDelay(
+      {required String config,
+      String url = 'https://google.com/generate_204'}) async {
     try {
       if (jsonDecode(config) == null) {
         throw ArgumentError('The provided string is not valid JSON');
@@ -102,12 +104,13 @@ class FlutterV2ray {
     } catch (_) {
       throw ArgumentError('The provided string is not valid JSON');
     }
-    return await FlutterV2rayPlatform.instance.getServerDelay(config: config);
+    return await FlutterV2rayPlatform.instance.getServerDelay(config: config, url: url);
   }
 
   /// This method returns the connected server delay.
-  Future<int> getConnectedServerDelay() async {
-    return await FlutterV2rayPlatform.instance.getConnectedServerDelay();
+  Future<int> getConnectedServerDelay(
+      {String url = 'https://google.com/generate_204'}) async {
+    return await FlutterV2rayPlatform.instance.getConnectedServerDelay(url);
   }
 
   // This method returns the V2Ray Core version.

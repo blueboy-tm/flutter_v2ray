@@ -60,18 +60,6 @@ public class Utilities {
         else return value + "";
     }
 
-    public static String parseTraffic(final double bytes, final boolean inBits, final boolean isMomentary) {
-        double value = inBits ? bytes * 8 : bytes;
-        if (value < AppConfigs.KILO_BYTE) {
-            return String.format(Locale.getDefault(), "%.1f " + (inBits ? "b" : "B") + (isMomentary ? "/s" : ""), value);
-        } else if (value < AppConfigs.MEGA_BYTE) {
-            return String.format(Locale.getDefault(), "%.1f K" + (inBits ? "b" : "B") + (isMomentary ? "/s" : ""), value / AppConfigs.KILO_BYTE);
-        } else if (value < AppConfigs.GIGA_BYTE) {
-            return String.format(Locale.getDefault(), "%.1f M" + (inBits ? "b" : "B") + (isMomentary ? "/s" : ""), value / AppConfigs.MEGA_BYTE);
-        } else {
-            return String.format(Locale.getDefault(), "%.2f G" + (inBits ? "b" : "B") + (isMomentary ? "/s" : ""), value / AppConfigs.GIGA_BYTE);
-        }
-    }
 
     public static V2rayConfig parseV2rayJsonFile(final String remark, String config, final ArrayList<String> blockedApplication, final ArrayList<String> bypass_subnets) {
         final V2rayConfig v2rayConfig = new V2rayConfig();

@@ -24,6 +24,10 @@ import com.github.blueboytm.flutter_v2ray.v2ray.interfaces.V2rayServicesListener
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.AppConfigs;
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.Utilities;
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.V2rayConfig;
+import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayProxyOnlyService;
+import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayVPNService;
+import com.github.blueboytm.flutter_v2ray.R;
+
 import libv2ray.Libv2ray;
 import libv2ray.V2RayPoint;
 import libv2ray.V2RayVPNServiceSupportsSet;
@@ -292,12 +296,31 @@ public final class V2rayCoreManager {
             notificationChannelID = createNotificationChannelID(v2rayConfig.APPLICATION_NAME);
         }
     
+        Intent stop_intent;
+        if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
+            stop_intent = new Intent(v2rayServicesListener.getService(), V2rayProxyOnlyService.class);
+        } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
+            stop_intent = new Intent(v2rayServicesListener.getService(), V2rayVPNService.class);
+        } else {
+            return;
+        }
+        stop_intent.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.STOP_SERVICE);
+
+        PendingIntent pendingIntent = PendingIntent.getService(
+            v2rayServicesListener.getService(),
+            0,
+            stop_intent,
+            PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(v2rayServicesListener.getService(), notificationChannelID);
         mBuilder.setSmallIcon(v2rayConfig.APPLICATION_ICON)
                 .setContentTitle(v2rayConfig.REMARK)
-                .setContentText("tap to open application")
-                .setContentIntent(notificationContentPendingIntent);
+                // .setContentText("tap to open application")
+                .addAction(0, "DISCONNECT", pendingIntent)
+                .setSmallIcon(R.drawable.baseline_vpn_key_24);
+                // .setContentIntent(notificationContentPendingIntent);
         v2rayServicesListener.getService().startForeground(1, mBuilder.build());
     }
 

@@ -41,6 +41,7 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
             }
         } else if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.STOP_SERVICE)) {
             V2rayCoreManager.getInstance().stopCore();
+            AppConfigs.V2RAY_CONFIG = null;
         } else if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY)) {
             new Thread(() -> {
                 Intent sendB = new Intent("CONNECTED_V2RAY_SERVER_DELAY");

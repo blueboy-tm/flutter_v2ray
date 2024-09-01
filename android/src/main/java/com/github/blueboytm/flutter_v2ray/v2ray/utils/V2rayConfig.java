@@ -15,5 +15,6 @@ public class V2rayConfig implements Serializable {
     public boolean ENABLE_TRAFFIC_STATICS = false;
     public String REMARK = "";
     public String APPLICATION_NAME;
+    public String NOTIFICATION_DISCONNECT_BUTTON_NAME;
     public int APPLICATION_ICON;
 }

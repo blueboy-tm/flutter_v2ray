@@ -9,6 +9,7 @@ public class AppConfigs {
     public static V2RAY_STATES V2RAY_STATE = V2RAY_STATES.V2RAY_DISCONNECTED;
     public static boolean ENABLE_TRAFFIC_AND_SPEED_STATICS = true;
     public static String DELAY_URL;
+    public static String NOTIFICATION_DISCONNECT_BUTTON_NAME;
 
     public enum V2RAY_SERVICE_COMMANDS {
         START_SERVICE,
@@ -26,6 +27,4 @@ public class AppConfigs {
         VPN_TUN,
         PROXY_ONLY
     }
-
-
 }

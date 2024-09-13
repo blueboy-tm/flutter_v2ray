@@ -74,7 +74,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   @override
   Future<int> getConnectedServerDelay(String url) async {
     return await methodChannel
-        .invokeMethod('getConnectedServerDelay', {"url", url});
+        .invokeMethod('getConnectedServerDelay', {"url": url});
   }
 
   @override

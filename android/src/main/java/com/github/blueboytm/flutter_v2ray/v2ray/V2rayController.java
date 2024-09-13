@@ -107,7 +107,13 @@ public class V2rayController {
             }
         };
 
-        context.registerReceiver(receiver, new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY"));
+        IntentFilter delayIntentFilter = new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.registerReceiver(receiver, delayIntentFilter, Context.RECEIVER_EXPORTED);
+        }else{
+            context.registerReceiver(receiver, delayIntentFilter);
+        }
+
         try {
             boolean received = latch.await(3000, TimeUnit.MILLISECONDS);
             if (!received) {

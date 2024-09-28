@@ -14,6 +14,8 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   @override
   Future<void> initializeV2Ray({
     required void Function(V2RayStatus status) onStatusChanged,
+    required String notificationIconResourceType,
+    required String notificationIconResourceName,
   }) async {
     eventChannel.receiveBroadcastStream().distinct().cast().listen((event) {
       if (event != null) {
@@ -29,6 +31,10 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
     });
     await methodChannel.invokeMethod(
       'initializeV2Ray',
+      {
+        "notificationIconResourceType": notificationIconResourceType,
+        "notificationIconResourceName": notificationIconResourceName,
+      },
     );
   }
 
@@ -36,6 +42,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   Future<void> startV2Ray({
     required String remark,
     required String config,
+    required String notificationDisconnectButtonName,
     List<String>? blockedApps,
     List<String>? bypassSubnets,
     bool proxyOnly = false,
@@ -46,6 +53,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
       "blocked_apps": blockedApps,
       "bypass_subnets": bypassSubnets,
       "proxy_only": proxyOnly,
+      "notificationDisconnectButtonName": notificationDisconnectButtonName,
     });
   }
 
@@ -66,7 +74,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   @override
   Future<int> getConnectedServerDelay(String url) async {
     return await methodChannel
-        .invokeMethod('getConnectedServerDelay', {"url", url});
+        .invokeMethod('getConnectedServerDelay', {"url": url});
   }
 
   @override

@@ -8,7 +8,6 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -35,6 +34,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  var v2rayStatus = ValueNotifier<V2RayStatus>(V2RayStatus());
   late final FlutterV2ray flutterV2ray = FlutterV2ray(
     onStatusChanged: (status) {
       v2rayStatus.value = status;
@@ -42,7 +42,6 @@ class _HomePageState extends State<HomePage> {
   );
   final config = TextEditingController();
   bool proxyOnly = false;
-  var v2rayStatus = ValueNotifier<V2RayStatus>(V2RayStatus());
   final bypassSubnetController = TextEditingController();
   List<String> bypassSubnets = [];
   String? coreVersion;
@@ -56,6 +55,7 @@ class _HomePageState extends State<HomePage> {
         config: config.text,
         proxyOnly: proxyOnly,
         bypassSubnets: bypassSubnets,
+        notificationDisconnectButtonName: "خاموش کردن"
       );
     } else {
       if (mounted) {
@@ -161,7 +161,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    flutterV2ray.initializeV2Ray().then((value) async {
+    flutterV2ray
+        .initializeV2Ray(
+      notificationIconResourceType: "mipmap",
+      notificationIconResourceName: "ic_launcher",
+    )
+        .then((value) async {
       coreVersion = await flutterV2ray.getCoreVersion();
       setState(() {});
     });

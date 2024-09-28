@@ -29,9 +29,14 @@ class FlutterV2ray {
   }
 
   /// You must initialize V2Ray before using it.
-  Future<void> initializeV2Ray() async {
+  Future<void> initializeV2Ray({
+    String notificationIconResourceType = "mipmap",
+    String notificationIconResourceName = "ic_launcher",
+  }) async {
     await FlutterV2rayPlatform.instance.initializeV2Ray(
       onStatusChanged: onStatusChanged,
+      notificationIconResourceType: notificationIconResourceType,
+      notificationIconResourceName: notificationIconResourceName,
     );
   }
 
@@ -70,6 +75,8 @@ class FlutterV2ray {
     List<String>? blockedApps,
     List<String>? bypassSubnets,
     bool proxyOnly = false,
+    String notificationDisconnectButtonName = "DISCONNECT",
+
   }) async {
     try {
       if (jsonDecode(config) == null) {
@@ -85,6 +92,7 @@ class FlutterV2ray {
       blockedApps: blockedApps,
       proxyOnly: proxyOnly,
       bypassSubnets: bypassSubnets,
+      notificationDisconnectButtonName: notificationDisconnectButtonName,
     );
   }
 
@@ -104,7 +112,8 @@ class FlutterV2ray {
     } catch (_) {
       throw ArgumentError('The provided string is not valid JSON');
     }
-    return await FlutterV2rayPlatform.instance.getServerDelay(config: config, url: url);
+    return await FlutterV2rayPlatform.instance
+        .getServerDelay(config: config, url: url);
   }
 
   /// This method returns the connected server delay.

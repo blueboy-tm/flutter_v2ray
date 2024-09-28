@@ -3,6 +3,8 @@ package com.github.blueboytm.flutter_v2ray.v2ray.utils;
 import android.content.Context;
 import android.util.Log;
 
+import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -12,9 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Locale;
-
-import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
 
 public class Utilities {
 
@@ -68,6 +67,7 @@ public class Utilities {
         v2rayConfig.BYPASS_SUBNETS = bypass_subnets;
         v2rayConfig.APPLICATION_ICON = AppConfigs.APPLICATION_ICON;
         v2rayConfig.APPLICATION_NAME = AppConfigs.APPLICATION_NAME;
+        v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME = AppConfigs.NOTIFICATION_DISCONNECT_BUTTON_NAME;
         try {
             JSONObject config_json = new JSONObject(config);
             try {

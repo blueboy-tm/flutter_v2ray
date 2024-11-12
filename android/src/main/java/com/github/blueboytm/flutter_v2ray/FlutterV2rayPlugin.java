@@ -122,9 +122,12 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
                 case "getV2rayStatus":
                     executor.submit(() -> {
                         try {
-                            result.success(V2rayController.getConnectionState().toString());
-                        } catch (Exception e) {}
-                    })
+                            result.success(V2rayController.getConnectionState().name());
+                        } catch (Exception e) {
+                            result.success("V2RAY_ERROR");
+                        }
+                    });
+                    break;
                 case "getCoreVersion":
                     result.success(V2rayController.getCoreVersion());
                     break;

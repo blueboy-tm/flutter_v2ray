@@ -78,6 +78,11 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   }
 
   @override
+  Future<String> getV2rayStatus() async {
+    return (await methodChannel.invokeMethod("getV2rayStatus")) ?? "Error";
+  }
+
+  @override
   Future<bool> requestPermission() async {
     return (await methodChannel.invokeMethod('requestPermission')) ?? false;
   }

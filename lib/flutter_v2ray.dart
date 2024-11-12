@@ -76,7 +76,6 @@ class FlutterV2ray {
     List<String>? bypassSubnets,
     bool proxyOnly = false,
     String notificationDisconnectButtonName = "DISCONNECT",
-
   }) async {
     try {
       if (jsonDecode(config) == null) {
@@ -114,6 +113,16 @@ class FlutterV2ray {
     }
     return await FlutterV2rayPlatform.instance
         .getServerDelay(config: config, url: url);
+  }
+
+  /// This method returns the current connection state
+  /// in the form of the String, which can be either
+  ///  - ["CONNECTING"]
+  ///  - ["CONNECTED"]
+  ///  - ["DISCONNECTED"]
+  ///  - ["ERROR"]
+  Future<String> getV2rayStatus() async {
+    return await FlutterV2rayPlatform.instance.getV2rayStatus();
   }
 
   /// This method returns the connected server delay.

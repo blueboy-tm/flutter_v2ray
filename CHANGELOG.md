@@ -1,3 +1,9 @@
+## 1.0.9
+
+* add disconnect button (notificationDisconnectButtonName)
+* fix requestPermission
+* fix notification bugs  (android 13 and higher)
+
 ## 1.0.8
 
 * fix registerReceiver error

@@ -55,7 +55,7 @@ class _HomePageState extends State<HomePage> {
         config: config.text,
         proxyOnly: proxyOnly,
         bypassSubnets: bypassSubnets,
-        notificationDisconnectButtonName: "خاموش کردن"
+        notificationDisconnectButtonName: "DISCONNECT",
       );
     } else {
       if (mounted) {

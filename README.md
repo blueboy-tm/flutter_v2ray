@@ -22,13 +22,11 @@
 
 
 ## Change logs
-### 1.0.8
+### 1.0.9
 
-* fix registerReceiver error
-* fix build for API 34 ( check IntentFilter V2RAY_CONNECTION_INFO )
-* change type of usage statistic
-* fix deprecated apis
-* update v2ray core to 1.8.17
+* add disconnect button (notificationDisconnectButtonName)
+* fix requestPermission
+* fix notification bugs  (android 13 and higher)
 
 #### [see more](./CHANGELOG.md)
 
@@ -44,8 +42,8 @@
 | Platform  | Status    | Info |
 | --------- | --------- | ---- |
 | Android   | Done ✅   | Xray 1.8.7 |
-| IOS       | Soon ❎   | - |
-| Desktop   | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy-tm) |
+| IOS       | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy_tm) |
+| Desktop   | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy_tm) |
 
 <br>
 

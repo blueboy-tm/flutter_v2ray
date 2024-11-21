@@ -16,5 +16,6 @@ public class V2rayConfig implements Serializable {
     public String REMARK = "";
     public String APPLICATION_NAME;
     public String NOTIFICATION_DISCONNECT_BUTTON_NAME;
+    public String NOTIFICATION_TITLE;
     public int APPLICATION_ICON;
 }

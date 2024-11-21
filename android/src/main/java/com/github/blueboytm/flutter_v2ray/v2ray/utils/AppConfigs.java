@@ -10,6 +10,7 @@ public class AppConfigs {
     public static boolean ENABLE_TRAFFIC_AND_SPEED_STATICS = true;
     public static String DELAY_URL;
     public static String NOTIFICATION_DISCONNECT_BUTTON_NAME;
+    public static String NOTIFICATION_TITLE;
 
     public enum V2RAY_SERVICE_COMMANDS {
         START_SERVICE,

@@ -43,6 +43,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
     required String remark,
     required String config,
     required String notificationDisconnectButtonName,
+    required String notificationTitle,
     List<String>? blockedApps,
     List<String>? bypassSubnets,
     bool proxyOnly = false,
@@ -54,6 +55,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
       "bypass_subnets": bypassSubnets,
       "proxy_only": proxyOnly,
       "notificationDisconnectButtonName": notificationDisconnectButtonName,
+      "notificationTitle": notificationTitle,
     });
   }
 

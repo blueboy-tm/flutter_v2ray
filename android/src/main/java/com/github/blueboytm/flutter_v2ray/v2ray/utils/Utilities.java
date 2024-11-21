@@ -68,6 +68,7 @@ public class Utilities {
         v2rayConfig.APPLICATION_ICON = AppConfigs.APPLICATION_ICON;
         v2rayConfig.APPLICATION_NAME = AppConfigs.APPLICATION_NAME;
         v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME = AppConfigs.NOTIFICATION_DISCONNECT_BUTTON_NAME;
+        v2rayConfig.NOTIFICATION_TITLE = AppConfigs.NOTIFICATION_TITLE;
         try {
             JSONObject config_json = new JSONObject(config);
             try {

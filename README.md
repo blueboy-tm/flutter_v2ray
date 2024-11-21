@@ -22,11 +22,10 @@
 
 
 ## Change logs
-### 1.0.9
+### 1.0.10
 
-* add disconnect button (notificationDisconnectButtonName)
-* fix requestPermission
-* fix notification bugs  (android 13 and higher)
+* add ability to change notification title 
+* add ability to know the exact connection status at any time
 
 #### [see more](./CHANGELOG.md)
 

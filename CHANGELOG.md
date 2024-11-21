@@ -1,3 +1,8 @@
+## 1.0.10
+
+* add ability to change notification title 
+* add ability to know the exact connection status at any time
+
 ## 1.0.9
 
 * add disconnect button (notificationDisconnectButtonName)

@@ -38,6 +38,11 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        
+        if (intent == null) {
+                
+            return START_NOT_STICKY;
+        }
         AppConfigs.V2RAY_SERVICE_COMMANDS startCommand = (AppConfigs.V2RAY_SERVICE_COMMANDS) intent.getSerializableExtra("COMMAND");
         if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.START_SERVICE)) {
             v2rayConfig = (V2rayConfig) intent.getSerializableExtra("V2RAY_CONFIG");

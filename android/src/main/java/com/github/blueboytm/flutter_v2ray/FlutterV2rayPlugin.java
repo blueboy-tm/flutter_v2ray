@@ -218,4 +218,4 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
         return true;
     }
 }
-}
+

@@ -1,3 +1,7 @@
+## 1.0.10
+
+* update xray core version to 25.3.6
+
 ## 1.0.9
 
 * add disconnect button (notificationDisconnectButtonName)

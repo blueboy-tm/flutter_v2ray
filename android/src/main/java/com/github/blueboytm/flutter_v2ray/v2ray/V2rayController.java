@@ -5,12 +5,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.Manifest;
+import android.content.pm.PackageManager;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
 import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayProxyOnlyService;
 import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayVPNService;
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.AppConfigs;
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.Utilities;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -32,7 +36,15 @@ public class V2rayController {
             }
         };
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(receiver, new IntentFilter("V2RAY_CONNECTION_INFO"), Context.RECEIVER_EXPORTED);
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                        context.registerReceiver(receiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+                
+            }
+            else{
+                context.registerReceiver(receiver, new IntentFilter("V2RAY_CONNECTION_INFO"), Context.RECEIVER_EXPORTED);
+            }
+         
         } else {
             context.registerReceiver(receiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
         }
@@ -59,11 +71,21 @@ public class V2rayController {
         }
         start_intent.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.START_SERVICE);
         start_intent.putExtra("V2RAY_CONFIG", AppConfigs.V2RAY_CONFIG);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                context.startService(start_intent);
+            }
+            else{
             context.startForegroundService(start_intent);
-        } else {
+
+            }
+        }
+        else{
             context.startService(start_intent);
         }
+ 
     }
 
     public static void StopV2ray(final Context context) {

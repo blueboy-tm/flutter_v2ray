@@ -22,11 +22,9 @@
 
 
 ## Change logs
-### 1.0.9
+### 1.0.10
 
-* add disconnect button (notificationDisconnectButtonName)
-* fix requestPermission
-* fix notification bugs  (android 13 and higher)
+* update xray core version to 25.3.6
 
 #### [see more](./CHANGELOG.md)
 
@@ -41,7 +39,7 @@
 
 | Platform  | Status    | Info |
 | --------- | --------- | ---- |
-| Android   | Done ✅   | Xray 1.8.7 |
+| Android   | Done ✅   | Xray 25.3.6 |
 | IOS       | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy_tm) |
 | Desktop   | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy_tm) |
 

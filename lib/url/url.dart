@@ -4,7 +4,7 @@ abstract class V2RayURL {
   V2RayURL({required this.url});
   final String url;
 
-  bool get allowInsecure => true;
+  bool get allowInsecure => false;
   String get security => "auto";
   int get level => 8;
   int get port => 443;
@@ -14,7 +14,7 @@ abstract class V2RayURL {
 
   Map<String, dynamic> inbound = {
     "tag": "in_proxy",
-    "port": 1080,
+    "port": 7890,
     "protocol": "socks",
     "listen": "127.0.0.1",
     "settings": {
@@ -29,6 +29,13 @@ abstract class V2RayURL {
     "streamSettings": null,
     "allocate": null
   };
+
+  Map<String, dynamic> inbound1 = {
+  };
+
+  Map<String, dynamic> inbound2 = {
+  };
+
 
   Map<String, dynamic> log = {
     "access": "",
@@ -90,15 +97,15 @@ abstract class V2RayURL {
   };
 
   Map<String, dynamic> routing = {
-    "domainStrategy": "UseIp",
-    "domainMatcher": null,
+    "domainStrategy": "AsIs",
+    "domainMatcher": "hybrid",
     "rules": [],
     "balancers": []
   };
 
   Map<String, dynamic> get fullConfiguration => {
         "log": log,
-        "inbounds": [inbound],
+        "inbounds": [inbound, inbound1, inbound2],
         "outbounds": [outbound1, outbound2, outbound3],
         "dns": dns,
         "routing": routing,

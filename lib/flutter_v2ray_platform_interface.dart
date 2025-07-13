@@ -66,4 +66,10 @@ abstract class FlutterV2rayPlatform extends PlatformInterface {
       'getCoreVersion() has not been implemented.',
     );
   }
+
+  Future<void> checkVPNState() async {
+    throw UnimplementedError(
+      'checkVPNState() has not been implemented.',
+    );
+  }
 }

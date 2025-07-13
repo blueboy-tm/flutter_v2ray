@@ -4,9 +4,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Build;
-import android.Manifest;
-import android.content.pm.PackageManager;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
 import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayProxyOnlyService;
@@ -16,7 +17,10 @@ import com.github.blueboytm.flutter_v2ray.v2ray.utils.Utilities;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
+import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -132,7 +136,7 @@ public class V2rayController {
         IntentFilter delayIntentFilter = new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.registerReceiver(receiver, delayIntentFilter, Context.RECEIVER_EXPORTED);
-        }else{
+        } else {
             context.registerReceiver(receiver, delayIntentFilter);
         }
 
@@ -163,5 +167,49 @@ public class V2rayController {
         return Libv2ray.checkVersionX();
     }
 
+    public static boolean checkVPNState(Context context) {
+        // 检查当前设备的 Android 版本是否大于等于 6.0 (Marshmallow)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // 获取系统的 ConnectivityManager 服务，用于管理网络连接
+            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
+            // 确保 ConnectivityManager 不为空
+            if (cm != null) {
+                // 获取当前活动的网络（即设备当前正在使用的网络）
+                Network activeNetwork = cm.getActiveNetwork();
+
+                // 确保活动网络不为空
+                if (activeNetwork != null) {
+                    // 获取活动网络的能力（NetworkCapabilities），用于检查网络属性
+                    NetworkCapabilities caps = cm.getNetworkCapabilities(activeNetwork);
+                    // 检查网络能力是否不为空，并且是否具有 VPN 传输属性
+                    return caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
+                }
+            }
+        } else {
+            // 对于 Android 6.0 以下的设备，使用通用方法检查 VPN 状态
+            try {
+                // 获取所有网络接口的列表
+                List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+
+                // 遍历每个网络接口
+                for (NetworkInterface intf : interfaces) {
+                    // 获取接口名称并将其转换为小写
+                    String name = intf.getName().toLowerCase();
+
+                    // 检查接口名称是否包含 "tun"、"ppp" 或 "ipsec"，这些是 VPN 接口的常见标识
+                    if (name.contains("tun") || name.contains("ppp") || name.contains("ipsec")) {
+                        // 如果找到匹配的接口，返回 true 表示 VPN 处于活动状态
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                // 捕获并打印异常（例如权限问题或网络接口获取失败）
+                e.printStackTrace();
+            }
+        }
+
+        // 如果没有检测到 VPN 活动状态，返回 false
+        return false;
+    }
 }

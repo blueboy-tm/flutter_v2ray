@@ -86,4 +86,9 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   Future<String> getCoreVersion() async {
     return await methodChannel.invokeMethod('getCoreVersion');
   }
+
+  @override
+  Future<void> checkVPNState() async {
+    await methodChannel.invokeMethod('checkVPNState');
+  }
 }

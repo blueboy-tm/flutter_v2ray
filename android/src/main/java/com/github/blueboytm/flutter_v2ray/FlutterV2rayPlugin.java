@@ -122,6 +122,9 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
                 case "getCoreVersion":
                     result.success(V2rayController.getCoreVersion());
                     break;
+                case "checkVPNState":
+                    result.success(V2rayController.checkVPNState(binding.getApplicationContext()));
+                    break;
                 case "requestPermission":
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

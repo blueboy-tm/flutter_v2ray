@@ -126,6 +126,10 @@ class FlutterV2ray {
     return await FlutterV2rayPlatform.instance.getCoreVersion();
   }
 
+  Future<void> checkVPNState() async {
+    return await FlutterV2rayPlatform.instance.checkVPNState();
+  }
+
   /// parse V2RayURL object from V2Ray share link
   ///
   /// like vmess://, vless://, trojan://, ss://, socks://

@@ -8,6 +8,9 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.Build;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.util.Log;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
 import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayProxyOnlyService;

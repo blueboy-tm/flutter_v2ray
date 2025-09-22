@@ -17,11 +17,21 @@ A new Flutter plugin project.
   s.dependency 'Flutter'
   s.platform = :ios, '14.0'
 
-  # 添加 Framework 支持
-  s.vendored_frameworks = 'Frameworks/LibXray.xcframework'
+  # 添加 LibXray 静态库支持
+  s.vendored_libraries = 'Frameworks/LibXray.xcframework/ios-arm64/libXray.a'
   s.static_framework    = true
+  
+  # Add LibXray headers
+  s.source_files = 'Classes/**/*', 'Frameworks/LibXray.xcframework/ios-arm64/Headers/*.h'
+  s.public_header_files = 'Frameworks/LibXray.xcframework/ios-arm64/Headers/*.h'
 
+  # Add required system libraries for libXray
+  s.libraries = 'resolv'
+  
   # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
+  s.pod_target_xcconfig = { 
+    'DEFINES_MODULE' => 'YES', 
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386'
+  }
   s.swift_version = '5.0'
 end

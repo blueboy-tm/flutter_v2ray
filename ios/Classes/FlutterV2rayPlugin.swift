@@ -1,5 +1,4 @@
 import Flutter
-import LibXray
 import NetworkExtension
 import UIKit
 
@@ -122,7 +121,7 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin {
 
     // 获取核心版本号
     private func handleGetCoreVersion(_ call: FlutterMethodCall, result: FlutterResult) {
-        let baseVersion = LibXrayXrayVersion()
+        let baseVersion = String(cString: CGoXrayVersion())
         // Call the function
         if let jsonObject = Utilities.decodeBase64AndParseJSON(baseVersion) {
             // Access individual keys in the JSON object

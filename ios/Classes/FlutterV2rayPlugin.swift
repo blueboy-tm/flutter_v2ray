@@ -1,6 +1,7 @@
 import Flutter
 import NetworkExtension
 import UIKit
+import UserNotifications
 
 public class FlutterV2rayPlugin: NSObject, FlutterPlugin {
     // 静态共享的事件流实例
@@ -79,6 +80,17 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin {
 
     /// 处理 handleInitializeV2Ray
     private func handleInitializeV2Ray(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        // Extract notification parameters (similar to Android)
+        guard let args = call.arguments as? [String: Any] else {
+            result(FlutterError(code: "INVALID_ARGUMENTS", message: "初始化 V2Ray 的参数缺失或无效", details: nil))
+            return
+        }
+        
+        let iconResourceName = args["notificationIconResourceName"] as? String ?? ""
+        let iconResourceType = args["notificationIconResourceType"] as? String ?? ""
+        
+        print("Initializing V2Ray with notification icon: \(iconResourceName), type: \(iconResourceType)")
+        
         controller.initializeV2Ray(result: result)
     }
 
@@ -92,7 +104,7 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin {
     }
 
     // 获取服务器延迟
-    private func handleGetServerDelay(_ call: FlutterMethodCall, result: FlutterResult) {
+    private func handleGetServerDelay(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let args = call.arguments as? [String: Any],
               let config = args["config"] as? String,
               let url = args["url"] as? String
@@ -104,7 +116,7 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin {
     }
 
     // 获取已连接服务器的延迟
-    private func handleGetConnectedServerDelay(_ call: FlutterMethodCall, result: FlutterResult) {
+    private func handleGetConnectedServerDelay(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let args = call.arguments as? [String: Any],
               let url = args["url"] as? String
         else {
@@ -116,7 +128,19 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin {
 
     // 请求 VPN 权限
     private func handleRequestPermission(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        result(true);
+        // Request notification permission first (async)
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("Notification permission error: \(error)")
+            }
+            print("Notification permission granted: \(granted)")
+        }
+        
+        // For now, return true to match Android behavior and allow VPN to proceed
+        // The actual VPN permission will be requested by the system when starting VPN
+        print("iOS: Returning true for VPN permission request")
+        result(true)
     }
 
     // 获取核心版本号
@@ -158,15 +182,36 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin {
     }
 
     // 获取服务器延迟
-    private func getServerDelay(config: String, url: String, result: FlutterResult) {
-        let delay = 100 // 示例延迟
-        result(delay)
+    private func getServerDelay(config: String, url: String, result: @escaping FlutterResult) {
+        // Perform actual ping test to measure server delay
+        guard let pingURL = URL(string: url) else {
+            result(FlutterError(code: "INVALID_URL", message: "Invalid ping URL", details: nil))
+            return
+        }
+        
+        let startTime = CFAbsoluteTimeGetCurrent()
+        var request = URLRequest(url: pingURL)
+        request.httpMethod = "HEAD"
+        request.timeoutInterval = 10.0
+        
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            let delay: Int
+            if error != nil {
+                delay = -1 // Indicate timeout/error
+            } else {
+                let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
+                delay = Int(timeElapsed * 1000) // Convert to milliseconds
+            }
+            DispatchQueue.main.async {
+                result(delay)
+            }
+        }.resume()
     }
 
     // 获取已连接服务器延迟
-    private func getConnectedServerDelay(url: String, result: FlutterResult) {
-        let delay = 50 // 示例延迟
-        result(delay)
+    private func getConnectedServerDelay(url: String, result: @escaping FlutterResult) {
+        // Use the same ping logic for connected server delay
+        getServerDelay(config: "", url: url, result: result)
     }
 
     // 处理 Flutter 错误

@@ -2,8 +2,8 @@ import Foundation
 import Network
 import os.log
 
-
 let networkLog = OSLog(subsystem: "com.group.sulian.app", category: "vpn_networkMonitor")
+let appLog = OSLog(subsystem: "com.group.sulian.app", category: "vpn_management")
 
 public class NetworkMonitor {
     

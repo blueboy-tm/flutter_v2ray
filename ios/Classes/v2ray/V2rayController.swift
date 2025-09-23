@@ -7,7 +7,7 @@ let conLog = OSLog(subsystem: "com.group.sulian.app", category: "vpn_controller"
 public class V2rayController {
     private lazy var pligun = FlutterV2rayPlugin.shared()
 
-    // 单例
+    // Single instance
     private static var sharedV2rayController: V2rayController = .init()
     public class func shared() -> V2rayController {
         return sharedV2rayController
@@ -21,32 +21,22 @@ public class V2rayController {
 
     private var vpnStatusObserver: NSObjectProtocol?
     deinit {
-        // 移除监听
+        // Remove listener
         if let observer = vpnStatusObserver {
             NotificationCenter.default.removeObserver(observer)
         }
     }
 
-    // 防抖计时器变量
+    // Debounce timer variables
     var debounceTimer: Timer?
-    let debounceInterval: TimeInterval = 0.5 // 设置防抖间隔为0.5秒
-    var timeoutTimer: Timer? // 新增超时计时器
-//    let timeoutInterval: TimeInterval = 5.0 // 设置超时时间为5秒
+    let debounceInterval: TimeInterval = 0.5 // Set debounce interval to 0.5 seconds
+    var timeoutTimer: Timer? // Add timeout timer
 
-    // 设置VPN状态监听
+    // Set VPN status listener
     private func setupVPNStatusObserver(result: @escaping FlutterResult) {
-        // 先取消所有现有计时器
+        // Cancel all existing timers first
         debounceTimer?.invalidate()
         timeoutTimer?.invalidate()
-
-        // 设置超时计时器
-//        timeoutTimer = Timer.scheduledTimer(withTimeInterval: timeoutInterval, repeats: false) { [weak self] _ in
-//            guard let self = self else { return }
-//            os_log("VPN状态检测超时", log: conLog, type: .error)
-//            self.cleanupObservers()
-//            AppConfigs.V2RAY_STATE = .DISCONNECT
-//            self.initializeV2Ray(result: result)
-//        }
 
         vpnStatusObserver = NotificationCenter.default.addObserver(
             forName: .NEVPNStatusDidChange,
@@ -55,14 +45,14 @@ public class V2rayController {
         ) { [weak self] _ in
             guard let self = self else { return }
 
-            // 取消之前的防抖计时器
+            // Cancel previous debounce timer
             debounceTimer?.invalidate()
 
-            // 设置新的防抖计时器
+            // Set new debounce timer
             debounceTimer = Timer.scheduledTimer(withTimeInterval: debounceInterval, repeats: false) { [weak self] _ in
                 guard let self = self else { return }
 
-                os_log("VPN状态变化通知触发", log: conLog, type: .debug)
+                os_log("VPN status change notification triggered", log: conLog, type: .debug)
                 self.vpnConifg.checkInitialState { isValid in
                     print("isValid: \(isValid)")
                     if isValid {
@@ -75,7 +65,7 @@ public class V2rayController {
         }
     }
 
-    // 清理观察者和计时器
+    // Clean up observers and timers
     private func cleanupObservers() {
         if let observer = vpnStatusObserver {
             NotificationCenter.default.removeObserver(observer)
@@ -88,7 +78,7 @@ public class V2rayController {
     }
 
     public func initializeV2Ray(result: @escaping FlutterResult) {
-        // 获取 V2RAY_STATE 的字符串表示
+        // Get string representation of V2RAY_STATE
         let connectStatus = AppConfigs.V2RAY_STATE.description
         let stats = V2RayStats.defaultStats()
 
@@ -98,58 +88,35 @@ public class V2rayController {
             stats.downloadSpeed,
             stats.totalUpload,
             stats.totalDownload,
-            connectStatus // 当前状态
+            connectStatus // Current status
         ])
 
         result(nil)
     }
 
-    // 启动 V2ray
+    // Start V2ray
     public func startV2Ray(remark: String, config: String, blockedApps: [String], bypassSubnets: [String], proxyOnly: Bool, result: @escaping FlutterResult) {
-        // 首次启动时设置监听
+        // Set up listener on first startup
         if vpnStatusObserver == nil {
             setupVPNStatusObserver(result: result)
         }
 
         coreManager.setUpListener()
-        // 打印输入参数，便于调试
-//        print("startV2Ray 被调用，传入的参数如下：")
-//        print("remark: \(remark)")
-//        print("config: \(config)")
-//        print("blockedApps: \(blockedApps)")
-//        print("bypassSubnets: \(bypassSubnets)")
-//        print("proxyOnly: \(proxyOnly)")
 
-        // 解析 V2ray 配置
+        // Parse V2ray configuration
         guard let v2rayConfig = Utilities.parseV2rayJsonFile(remark: remark, config: config, blockedApplication: blockedApps, bypassSubnets: bypassSubnets) else {
-            // 如果解析失败，直接返回
+            // If parsing fails, return directly
             return
         }
 
         AppConfigs.V2RAY_CONFIG = v2rayConfig
-//        AppConfigs.V2RAY_STATE = .CONNECTED
 
-//        print(AppConfigs.V2RAY_CONFIG?.APPLICATION_ICON ?? 0)
-//        print(AppConfigs.V2RAY_CONFIG?.APPLICATION_NAME ?? "Default Name")
-//        print(AppConfigs.V2RAY_CONFIG?.BLOCKED_APPS ?? "BLOCKED_APPS")
-//        print(AppConfigs.V2RAY_CONFIG?.BYPASS_SUBNETS ?? "BYPASS_SUBNETS")
-//        print(AppConfigs.V2RAY_CONFIG?.CONNECTED_V2RAY_SERVER_ADDRESS ?? "Default Address")
-//        print(AppConfigs.V2RAY_CONFIG?.CONNECTED_V2RAY_SERVER_PORT ?? "Default Port")
-//        print(AppConfigs.V2RAY_CONFIG?.ENABLE_TRAFFIC_STATISTICS ?? false)
-//        print(AppConfigs.V2RAY_CONFIG?.LOCAL_HTTP_PORT ?? 0)
-//        print(AppConfigs.V2RAY_CONFIG?.LOCAL_SOCKS5_PORT ?? 0)
-//        print(AppConfigs.V2RAY_CONFIG?.NOTIFICATION_DISCONNECT_BUTTON_NAME ?? "DISCONNECT")
-//        print(AppConfigs.V2RAY_CONFIG?.REMARK ?? "Default Remark")
-//        print(AppConfigs.V2RAY_CONFIG?.V2RAY_FULL_JSON_CONFIG ?? "Default Full JSON")
-
-        // 如果配置为 nil, 不做任何操作
+        // If configuration is nil, do nothing
         if AppConfigs.V2RAY_CONFIG == nil {
             return
         }
 
         coreManager.startCore()
-
-//        initializeV2Ray(result: result)
     }
 
     public func stopV2Ray(result: @escaping FlutterResult) {

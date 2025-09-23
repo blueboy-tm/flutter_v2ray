@@ -12,19 +12,19 @@ public class VPNConfigValidator {
     
 //    private var currentCallback: VpnStausChangeCallback
  
-    // 新增连接状态判断逻辑
+        // New connection status check logic
     private func checkConnectionStatus(_ manager: NETunnelProviderManager?) -> Bool {
         guard let connection = manager?.connection else { return false }
         
         switch connection.status {
-        case .connected, .connecting, .reasserting:  // 合并三种有效状态
+        case .connected, .connecting, .reasserting:  // Merge three valid states
             return true
         default:
             return false
         }
     }
 
-    /// 初始化时同步检查
+    /// Initial synchronous check
     public func checkInitialState(changeHandler: @escaping VpnStausChangeCallback) {
         let semaphore = DispatchSemaphore(value: 0)
         var isValid = false
@@ -32,13 +32,13 @@ public class VPNConfigValidator {
         NETunnelProviderManager.loadAllFromPreferences { managers, _ in
             defer { semaphore.signal() }
             
-            // 1. 检查配置是否存在
+            // 1. Check if configuration exists
             let configExists = managers?.contains {
                 ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == AppConfigs.BUNDLE_IDENTIFIER
             } ?? false
 //            print("configExists \(configExists)")
             
-            // 2. 检查活动配置
+            // 2. Check active configuration
             let activeConfig = managers?.first { $0.isEnabled }
 //            print("activeConfig \(activeConfig)")
             
@@ -52,7 +52,7 @@ public class VPNConfigValidator {
             
             print("isConnected \(isConnected)")
             
-            // 最终有效性 = 配置存在 + 已启用 + 已连接
+            // Final validity = configuration exists + enabled + connected
             isValid = configExists && isActiveValid && isConnected
             
             changeHandler(isValid)

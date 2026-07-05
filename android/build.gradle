@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0'
+        classpath 'com.android.tools.build:gradle:8.7.0'
     }
 }
 
@@ -26,7 +26,7 @@ android {
         namespace 'com.github.blueboytm.flutter_v2ray'
     }
 
-    compileSdkVersion 34
+    compileSdkVersion 35
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -34,6 +34,12 @@ android {
 
     defaultConfig {
         minSdkVersion 21
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     dependencies {

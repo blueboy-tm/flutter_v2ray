@@ -325,10 +325,10 @@ public final class V2rayCoreManager {
         return false;
     }
 
-    public Long getConnectedV2rayServerDelay() {
+    public Long getConnectedV2rayServerDelay(final String url) {
         try {
-            long result = coreController.measureDelay(AppConfigs.DELAY_URL);
-            Log.i("V2RAY_DELAY", "Connected core measureDelay url=" + AppConfigs.DELAY_URL
+            long result = coreController.measureDelay(url);
+            Log.i("V2RAY_DELAY", "Connected core measureDelay url=" + url
                     + " result=" + result);
             return result;
         } catch (Exception e) {

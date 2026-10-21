@@ -168,7 +168,10 @@ public final class V2rayCoreManager {
             return false;
         }
         if (isV2rayCoreRunning()) {
-            stopCore();
+            // A second start must never call stopCore(), which calls
+            // stopSelf() on the active service and can tear down a replacement.
+            Log.w(V2rayCoreManager.class.getSimpleName(), "Ignoring start while core is already running");
+            return false;
         }
         try {
             // tunFd=0: retain the existing external tun2socks VPN pipeline.

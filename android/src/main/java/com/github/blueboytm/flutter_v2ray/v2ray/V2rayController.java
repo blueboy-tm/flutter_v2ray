@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import libv2ray.Libv2ray;
 
 public class V2rayController {
+    public static final String ACTION_DELAY_REQUEST =
+            "com.github.blueboytm.flutter_v2ray.MEASURE_DELAY";
     private static BroadcastReceiver connectionStateReceiver;
 
     public static synchronized void init(final Context context, final int app_icon, final String app_name) {
@@ -90,20 +92,21 @@ public class V2rayController {
         // Always ask the active service; it owns the real native CoreController.
         Log.i("V2RAY_DELAY", "Request connected delay; cachedState=" + getConnectionState()
                 + ", mode=" + AppConfigs.V2RAY_CONNECTION_MODE);
-        Intent checkDelay;
-        if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
-            checkDelay = new Intent(context, V2rayProxyOnlyService.class);
-        } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
-            checkDelay = new Intent(context, V2rayVPNService.class);
-        } else {
-            return -1;
-        }
+        // Never call Context.startService() merely to measure latency. That
+        // previously recreated the VPN daemon immediately after Disconnect.
+        if (!V2rayConnectionCoordinator.isRequestedRunning()) return -1;
+        Intent checkDelay = new Intent(ACTION_DELAY_REQUEST);
+        checkDelay.setPackage(context.getPackageName());
+        checkDelay.putExtra("MODE", AppConfigs.V2RAY_CONNECTION_MODE.name());
+        final String requestId = java.util.UUID.randomUUID().toString();
+        checkDelay.putExtra("REQUEST_ID", requestId);
 
         final long[] delay = {-1};
         final CountDownLatch latch = new CountDownLatch(1);
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context receiverContext, Intent intent) {
+                if (intent == null || !requestId.equals(intent.getStringExtra("REQUEST_ID"))) return;
                 try {
                     delay[0] = Long.parseLong(intent.getStringExtra("DELAY"));
                 } catch (Exception ignored) {
@@ -123,9 +126,8 @@ public class V2rayController {
         }
 
         try {
-            checkDelay.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY);
             checkDelay.putExtra("DELAY_URL", url);
-            context.startService(checkDelay);
+            context.sendBroadcast(checkDelay);
             // Native Xray delay measurement can take up to 12 seconds.
             if (!latch.await(15, TimeUnit.SECONDS)) {
                 Log.w("V2RAY_DELAY", "Timed out waiting for connected delay broadcast");

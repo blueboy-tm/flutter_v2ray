@@ -1,19 +1,16 @@
 package com.github.blueboytm.flutter_v2ray;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.net.VpnService;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.V2rayController;
 import com.github.blueboytm.flutter_v2ray.v2ray.V2rayReceiver;
@@ -35,18 +32,21 @@ import io.flutter.plugin.common.PluginRegistry;
 public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginRegistry.ActivityResultListener {
 
     private static final int REQUEST_CODE_VPN_PERMISSION = 24;
-    private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private MethodChannel vpnControlMethod;
     private EventChannel vpnStatusEvent;
     private EventChannel.EventSink vpnStatusSink;
     private Activity activity;
+    private ActivityPluginBinding activityBinding;
+    private Context applicationContext;
     private BroadcastReceiver v2rayBroadCastReceiver;
     private MethodChannel.Result pendingResult;
+    private boolean statusReceiverRegistered = false;
 
     @SuppressLint("DiscouragedApi")
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        applicationContext = binding.getApplicationContext();
         vpnControlMethod = new MethodChannel(binding.getBinaryMessenger(), "flutter_v2ray");
         vpnStatusEvent = new EventChannel(binding.getBinaryMessenger(), "flutter_v2ray/status");
 
@@ -54,29 +54,15 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
             @Override
             public void onListen(Object arguments, EventChannel.EventSink events) {
                 vpnStatusSink = events;
-                V2rayReceiver.vpnStatusSink = vpnStatusSink;
-
-                // Register the BroadcastReceiver now that vpnStatusSink is available
-                if (v2rayBroadCastReceiver == null) {
-                    v2rayBroadCastReceiver = new V2rayReceiver();
-                }
-                IntentFilter filter = new IntentFilter("V2RAY_CONNECTION_INFO");
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    activity.registerReceiver(v2rayBroadCastReceiver, filter, Context.RECEIVER_EXPORTED);
-                } else {
-                    activity.registerReceiver(v2rayBroadCastReceiver, filter);
-                }
+                V2rayReceiver.vpnStatusSink = events;
+                registerStatusReceiver();
             }
 
             @Override
             public void onCancel(Object arguments) {
-                if (vpnStatusSink != null) vpnStatusSink.endOfStream();
-
-                // Unregister the BroadcastReceiver when the stream is canceled
-                if (v2rayBroadCastReceiver != null) {
-                    activity.unregisterReceiver(v2rayBroadCastReceiver);
-                    v2rayBroadCastReceiver = null;
-                }
+                vpnStatusSink = null;
+                V2rayReceiver.vpnStatusSink = null;
+                unregisterStatusReceiver();
             }
         });
 
@@ -125,17 +111,27 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
                     result.success(V2rayController.getCoreVersion());
                     break;
                 case "requestPermission":
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_POST_NOTIFICATIONS);
-                        }
+                    if (activity == null) {
+                        result.error("NO_ACTIVITY", "VPN permission requires an attached Activity", null);
+                        break;
                     }
-                    final Intent request = VpnService.prepare(activity);
-                    if (request != null) {
-                        pendingResult = result;
-                        activity.startActivityForResult(request, REQUEST_CODE_VPN_PERMISSION);
-                    } else {
-                        result.success(true);
+                    if (pendingResult != null) {
+                        result.error("PERMISSION_IN_PROGRESS", "Another VPN permission request is pending", null);
+                        break;
+                    }
+                    // Notification permission is optional for foreground VPN services on
+                    // Android 13+. Do not launch two permission dialogs concurrently.
+                    try {
+                        final Intent request = VpnService.prepare(activity);
+                        if (request == null) {
+                            result.success(true);
+                        } else {
+                            pendingResult = result;
+                            activity.startActivityForResult(request, REQUEST_CODE_VPN_PERMISSION);
+                        }
+                    } catch (RuntimeException e) {
+                        pendingResult = null;
+                        result.error("VPN_PERMISSION_FAILED", e.getMessage(), null);
                     }
                     break;
                 default:
@@ -145,76 +141,80 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
     }
 
 
+    private void registerStatusReceiver() {
+        if (applicationContext == null || vpnStatusSink == null || statusReceiverRegistered) return;
+        if (v2rayBroadCastReceiver == null) v2rayBroadCastReceiver = new V2rayReceiver();
+        IntentFilter filter = new IntentFilter("V2RAY_CONNECTION_INFO");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            applicationContext.registerReceiver(v2rayBroadCastReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            applicationContext.registerReceiver(v2rayBroadCastReceiver, filter);
+        }
+        statusReceiverRegistered = true;
+    }
+
+    private void unregisterStatusReceiver() {
+        if (!statusReceiverRegistered || applicationContext == null) return;
+        applicationContext.unregisterReceiver(v2rayBroadCastReceiver);
+        statusReceiverRegistered = false;
+        v2rayBroadCastReceiver = null;
+    }
+
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        if (v2rayBroadCastReceiver != null) {
-            activity.unregisterReceiver(v2rayBroadCastReceiver);
-            v2rayBroadCastReceiver = null;
+        unregisterStatusReceiver();
+        vpnStatusSink = null;
+        V2rayReceiver.vpnStatusSink = null;
+        if (pendingResult != null) {
+            pendingResult.error("ENGINE_DETACHED", "Flutter engine detached during VPN permission request", null);
+            pendingResult = null;
         }
         vpnControlMethod.setMethodCallHandler(null);
         vpnStatusEvent.setStreamHandler(null);
+        applicationContext = null;
         executor.shutdown();
     }
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        activityBinding = binding;
         activity = binding.getActivity();
         binding.addActivityResultListener(this);
-        // Register the receiver if vpnStatusSink is already set
-        if (vpnStatusSink != null) {
-            V2rayReceiver.vpnStatusSink = vpnStatusSink;
-            if (v2rayBroadCastReceiver == null) {
-                v2rayBroadCastReceiver = new V2rayReceiver();
-            }
-            IntentFilter filter = new IntentFilter("V2RAY_CONNECTION_INFO");
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                activity.registerReceiver(v2rayBroadCastReceiver, filter, Context.RECEIVER_EXPORTED);
-            } else {
-                activity.registerReceiver(v2rayBroadCastReceiver, filter);
-            }
-        }
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
-        // No additional cleanup required
+        // Retain pendingResult: the new Activity can deliver the in-flight result.
+        detachActivity();
     }
 
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-        activity = binding.getActivity();
-        binding.addActivityResultListener(this);
-
-        // Re-register the receiver if vpnStatusSink is already set
-        if (vpnStatusSink != null) {
-            V2rayReceiver.vpnStatusSink = vpnStatusSink;
-            if (v2rayBroadCastReceiver == null) {
-                v2rayBroadCastReceiver = new V2rayReceiver();
-            }
-            IntentFilter filter = new IntentFilter("V2RAY_CONNECTION_INFO");
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                activity.registerReceiver(v2rayBroadCastReceiver, filter, Context.RECEIVER_EXPORTED);
-            } else {
-                activity.registerReceiver(v2rayBroadCastReceiver, filter);
-            }
-        }
+        onAttachedToActivity(binding);
     }
 
     @Override
     public void onDetachedFromActivity() {
-        // No additional cleanup required
+        detachActivity();
+        if (pendingResult != null) {
+            pendingResult.error("ACTIVITY_DETACHED", "Activity detached during VPN permission request", null);
+            pendingResult = null;
+        }
+    }
+
+    private void detachActivity() {
+        if (activityBinding != null) activityBinding.removeActivityResultListener(this);
+        activityBinding = null;
+        activity = null;
     }
 
     @Override
     public boolean onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if (requestCode == REQUEST_CODE_VPN_PERMISSION) {
-            if (resultCode == Activity.RESULT_OK) {
-                pendingResult.success(true);
-            } else {
-                pendingResult.success(false);
-            }
-            pendingResult = null;
-        }
+        if (requestCode != REQUEST_CODE_VPN_PERMISSION) return false;
+        MethodChannel.Result callback = pendingResult;
+        pendingResult = null;
+        // Some Android devices deliver the result again after Activity recreation.
+        if (callback != null) callback.success(resultCode == Activity.RESULT_OK);
         return true;
     }
 }

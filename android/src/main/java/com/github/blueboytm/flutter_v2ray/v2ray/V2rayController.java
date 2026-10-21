@@ -81,7 +81,7 @@ public class V2rayController {
         AppConfigs.V2RAY_CONFIG = null;
     }
 
-    public static long getConnectedV2rayServerDelay(Context context) {
+    public static long getConnectedV2rayServerDelay(Context context, String url) {
         // The Flutter process and the VPN daemon are separate Android processes.
         // The broadcast-backed local state can be stale even when Xray is running.
         // Always ask the active service; it owns the real native CoreController.
@@ -121,6 +121,7 @@ public class V2rayController {
 
         try {
             checkDelay.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY);
+            checkDelay.putExtra("DELAY_URL", url);
             context.startService(checkDelay);
             // Native Xray delay measurement can take up to 12 seconds.
             if (!latch.await(15, TimeUnit.SECONDS)) {

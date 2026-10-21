@@ -65,7 +65,10 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
                 return START_NOT_STICKY;
             }
             if (V2rayCoreManager.getInstance().isV2rayCoreRunning()) {
-                V2rayCoreManager.getInstance().stopCore();
+                // Android can redeliver START_SERVICE or Flutter can issue a
+                // duplicate request. Never tear down the service while starting.
+                Log.i("VPN_SERVICE", "Core already running; ignoring duplicate start");
+                return START_NOT_STICKY;
             }
             if (V2rayCoreManager.getInstance().startCore(v2rayConfig)) {
                 Log.e(V2rayProxyOnlyService.class.getSimpleName(), "onStartCommand success => v2ray core started.");
@@ -305,6 +308,9 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             stopAllProcess();
         }
         super.onDestroy();
+        com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(
+                getApplicationContext(),
+                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.DAEMON_VPN);
     }
 
     @Override

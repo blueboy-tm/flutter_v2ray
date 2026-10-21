@@ -42,11 +42,26 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        AppConfigs.V2RAY_SERVICE_COMMANDS startCommand = (AppConfigs.V2RAY_SERVICE_COMMANDS) intent.getSerializableExtra("COMMAND");
-        if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.START_SERVICE)) {
+        // Android may recreate a killed service with a null Intent. There is no
+        // recoverable configuration in that case, so do not restart the daemon.
+        if (intent == null) {
+            Log.w("VPN_SERVICE", "Ignoring service restart with null Intent");
+            stopSelfResult(startId);
+            return START_NOT_STICKY;
+        }
+        AppConfigs.V2RAY_SERVICE_COMMANDS startCommand =
+                (AppConfigs.V2RAY_SERVICE_COMMANDS) intent.getSerializableExtra("COMMAND");
+        if (startCommand == null) {
+            Log.w("VPN_SERVICE", "Ignoring missing service command");
+            stopSelfResult(startId);
+            return START_NOT_STICKY;
+        }
+        if (startCommand == AppConfigs.V2RAY_SERVICE_COMMANDS.START_SERVICE) {
             v2rayConfig = (V2rayConfig) intent.getSerializableExtra("V2RAY_CONFIG");
             if (v2rayConfig == null) {
-                this.onDestroy();
+                Log.e(TAG, "Missing V2Ray configuration");
+                stopSelfResult(startId);
+                return START_NOT_STICKY;
             }
             if (V2rayCoreManager.getInstance().isV2rayCoreRunning()) {
                 V2rayCoreManager.getInstance().stopCore();
@@ -54,7 +69,8 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             if (V2rayCoreManager.getInstance().startCore(v2rayConfig)) {
                 Log.e(V2rayProxyOnlyService.class.getSimpleName(), "onStartCommand success => v2ray core started.");
             } else {
-                this.onDestroy();
+                stopSelfResult(startId);
+                return START_NOT_STICKY;
             }
         } else if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.STOP_SERVICE)) {
             V2rayCoreManager.getInstance().stopCore();
@@ -69,9 +85,10 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
                 sendBroadcast(sendB);
             }, "MEASURE_CONNECTED_V2RAY_SERVER_DELAY").start();
         } else {
-            this.onDestroy();
+            Log.w("VPN_SERVICE", "Unknown service command: " + startCommand);
+            return START_NOT_STICKY;
         }
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     private void stopAllProcess() {

@@ -2,7 +2,6 @@ package com.github.blueboytm.flutter_v2ray.v2ray.core;
 
 import static com.github.blueboytm.flutter_v2ray.v2ray.utils.Utilities.getUserAssetsPath;
 
-import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -10,14 +9,12 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.interfaces.V2rayServicesListener;
@@ -266,14 +263,9 @@ public final class V2rayCoreManager {
             return;
         }
 
-        // Check notification permission for Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
-        }
-
+        // Android 13+ permits foreground services even when the user denies
+        // POST_NOTIFICATIONS. Skipping startForeground() here caused service
+        // startup failures (and sometimes an ANR) after notification denial.
         Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
         if (launchIntent != null) {
             launchIntent.setAction("FROM_DISCONNECT_BTN");
@@ -285,19 +277,14 @@ public final class V2rayCoreManager {
         } else {
             flags = PendingIntent.FLAG_UPDATE_CURRENT;
         }
-        PendingIntent notificationContentPendingIntent = PendingIntent.getActivity(
-                context, 0, launchIntent, flags);
+        PendingIntent notificationContentPendingIntent = launchIntent == null ? null :
+                PendingIntent.getActivity(context, 0, launchIntent, flags);
 
         String notificationChannelID = createNotificationChannelID(v2rayConfig.APPLICATION_NAME);
 
-        Intent stopIntent;
-        if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
-            stopIntent = new Intent(context, V2rayProxyOnlyService.class);
-        } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
-            stopIntent = new Intent(context, V2rayVPNService.class);
-        } else {
-            return;
-        }
+        // Connection mode is process-local, and may differ in the daemon.
+        // The active service is the correct target for its own stop action.
+        Intent stopIntent = new Intent(context, context.getClass());
         stopIntent.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.STOP_SERVICE);
 
         PendingIntent pendingIntent = PendingIntent.getService(
@@ -311,8 +298,10 @@ public final class V2rayCoreManager {
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setShowWhen(false)
                 .setOnlyAlertOnce(true)
-                .setContentIntent(notificationContentPendingIntent)
                 .setOngoing(true);
+        if (notificationContentPendingIntent != null) {
+            notificationBuilder.setContentIntent(notificationContentPendingIntent);
+        }
 
         context.startForeground(NOTIFICATION_ID, notificationBuilder.build());
     }
@@ -333,7 +322,7 @@ public final class V2rayCoreManager {
             return result;
         } catch (Exception e) {
             Log.e("V2RAY_DELAY", "Connected core measureDelay failed, url="
-                    + AppConfigs.DELAY_URL, e);
+                    + url, e);
             return -1L;
         }
     }

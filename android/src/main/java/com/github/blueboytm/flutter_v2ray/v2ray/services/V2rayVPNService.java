@@ -61,8 +61,11 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             AppConfigs.V2RAY_CONFIG = null;
         } else if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY)) {
             new Thread(() -> {
+                String url = intent.getStringExtra("DELAY_URL");
+                Log.i("V2RAY_DELAY", "VPN service measure delay url=" + url);
                 Intent sendB = new Intent("CONNECTED_V2RAY_SERVER_DELAY");
-                sendB.putExtra("DELAY", String.valueOf(V2rayCoreManager.getInstance().getConnectedV2rayServerDelay()));
+                sendB.setPackage(getPackageName());
+                sendB.putExtra("DELAY", String.valueOf(V2rayCoreManager.getInstance().getConnectedV2rayServerDelay(url)));
                 sendBroadcast(sendB);
             }, "MEASURE_CONNECTED_V2RAY_SERVER_DELAY").start();
         } else {

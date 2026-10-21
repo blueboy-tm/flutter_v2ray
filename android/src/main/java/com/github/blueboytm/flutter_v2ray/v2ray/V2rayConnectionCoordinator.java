@@ -33,7 +33,7 @@ public final class V2rayConnectionCoordinator {
 
     private static volatile boolean requestedRunning;
     private static String requestedSignature;
-    private static AppConfigs.V2RAY_CONNECTION_MODES requestedMode;
+    private static volatile AppConfigs.V2RAY_CONNECTION_MODES requestedMode;
     private static boolean awaitingVpn;
     private static boolean awaitingProxy;
     private static BroadcastReceiver stoppedReceiver;
@@ -107,11 +107,17 @@ public final class V2rayConnectionCoordinator {
         });
     }
 
-    public static void onConnectionState(AppConfigs.V2RAY_STATES state) {
+    public static boolean acceptsStatusFrom(String serviceMode) {
+        AppConfigs.V2RAY_CONNECTION_MODES current = requestedMode;
+        return current == null || serviceMode == null || current.name().equals(serviceMode);
+    }
+
+    public static void onConnectionState(AppConfigs.V2RAY_STATES state, String serviceMode) {
         if (state != AppConfigs.V2RAY_STATES.V2RAY_DISCONNECTED) return;
         HANDLER.post(() -> {
-            // A disconnection during an intentional mode switch belongs to the
-            // old service and must not cancel the pending new connection.
+            // Late DISCONNECTED events from the old VPN must not reset a new
+            // proxy-only session (and vice versa).
+            if (!acceptsStatusFrom(serviceMode)) return;
             if (pendingStart == null && stoppedReceiver == null) {
                 requestedRunning = false;
                 requestedSignature = null;

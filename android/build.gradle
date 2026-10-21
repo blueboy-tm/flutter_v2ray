@@ -59,14 +59,26 @@ android {
 
 
 dependencies {
-    implementation(name: "libv2ray", ext: "aar")
+    implementation 'com.github.2dust:libv2ray:v26.10.17@aar'
     implementation 'androidx.appcompat:appcompat:1.6.1'
 }
 
+// Resolve the published AAR on demand and cache it through Gradle.
+// The release tag is the dependency revision, e.g. v26.10.17.
 rootProject.allprojects {
     repositories {
-        flatDir {
-            dirs project(':flutter_v2ray').file('libs')
+        ivy {
+            name = 'AndroidLibXrayLite'
+            url = uri('https://github.com/2dust/AndroidLibXrayLite/releases/download')
+            patternLayout {
+                artifact '[revision]/libv2ray.aar'
+            }
+            metadataSources {
+                artifact()
+            }
+            content {
+                includeGroup 'com.github.2dust'
+            }
         }
     }
 }

@@ -35,12 +35,8 @@
                 android:value="true" />
         </service>
 
-        <receiver
-            android:name="com.github.blueboytm.flutter_v2ray.v2ray.V2rayReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="V2RAY_CONNECTION_INFO" />
-            </intent-filter>
-        </receiver>
+        <!-- Status updates use runtime-registered receivers only. A manifest
+             receiver for this implicit action is blocked in background on
+             modern Android and unnecessarily exposed the status channel. -->
     </application>
 </manifest>

@@ -115,8 +115,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
                 case "getConnectedServerDelay":
                     executor.submit(() -> {
                         try {
-                            AppConfigs.DELAY_URL = call.argument("url");
-                            result.success(V2rayController.getConnectedV2rayServerDelay(binding.getApplicationContext()));
+                            result.success(V2rayController.getConnectedV2rayServerDelay(binding.getApplicationContext(), call.argument("url")));
                         } catch (Exception e) {
                             result.success(-1);
                         }

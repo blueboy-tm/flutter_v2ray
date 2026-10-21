@@ -76,6 +76,12 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
 
     @Override
     public void onDestroy() {
+        // stopService() does not deliver STOP_SERVICE. Release the native core
+        // here, but never stop a newer service that replaced this listener.
+        V2rayCoreManager manager = V2rayCoreManager.getInstance();
+        if (manager.v2rayServicesListener == this && manager.isV2rayCoreRunning()) {
+            manager.stopCore();
+        }
         super.onDestroy();
     }
 

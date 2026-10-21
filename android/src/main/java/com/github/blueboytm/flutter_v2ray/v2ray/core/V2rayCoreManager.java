@@ -123,6 +123,8 @@ public final class V2rayCoreManager {
                 }
                 SERVICE_DURATION = Utilities.convertIntToTwoDigit(hours) + ":" + Utilities.convertIntToTwoDigit(minutes) + ":" + Utilities.convertIntToTwoDigit(seconds);
                 Intent connection_info_intent = new Intent("V2RAY_CONNECTION_INFO");
+            connection_info_intent.setPackage(v2rayServicesListener.getService().getPackageName());
+                connection_info_intent.setPackage(context.getPackageName());
                 connection_info_intent.putExtra("STATE", V2rayCoreManager.getInstance().V2RAY_STATE);
                 connection_info_intent.putExtra("DURATION", SERVICE_DURATION);
                 connection_info_intent.putExtra("UPLOAD_SPEED", uploadSpeed);

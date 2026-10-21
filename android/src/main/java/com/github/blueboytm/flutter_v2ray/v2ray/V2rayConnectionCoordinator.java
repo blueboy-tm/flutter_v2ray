@@ -146,9 +146,22 @@ public final class V2rayConnectionCoordinator {
             completeStopWaitIfReady();
         } else {
             stopTimeout = () -> {
-                Log.w(TAG, "Daemon stop acknowledgement timeout; retrying service stop");
-                context.stopService(new Intent(context, V2rayVPNService.class));
-                context.stopService(new Intent(context, V2rayProxyOnlyService.class));
+                Log.w(TAG, "Daemon stop acknowledgement timeout; checking service state");
+                boolean vpnStillRunning =
+                        context.stopService(new Intent(context, V2rayVPNService.class));
+                boolean proxyStillRunning =
+                        context.stopService(new Intent(context, V2rayProxyOnlyService.class));
+                if (vpnStillRunning || proxyStillRunning) {
+                    // Never launch a new core on top of a daemon that has not
+                    // completed teardown; doing so can leave the VPN stuck.
+                    Log.e(TAG, "Daemon still running after stop timeout; canceling start");
+                    requestedRunning = false;
+                    requestedMode = null;
+                    requestedSignature = null;
+                    AppConfigs.V2RAY_CONFIG = null;
+                    clearStopWait();
+                    return;
+                }
                 awaitingVpn = false;
                 awaitingProxy = false;
                 completeStopWaitIfReady();

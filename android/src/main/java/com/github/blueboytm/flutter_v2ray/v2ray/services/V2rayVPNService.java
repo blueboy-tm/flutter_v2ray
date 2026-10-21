@@ -21,6 +21,8 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.OutputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -28,7 +30,9 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     private ParcelFileDescriptor mInterface;
     private Process process;
     private V2rayConfig v2rayConfig;
-    private boolean isRunning = true;
+    private volatile boolean isRunning = false;
+    private volatile boolean tunProcessStarted = false;
+    private static final String TAG = "VPN_SERVICE";
 
     @Override
     public void onCreate() {
@@ -70,8 +74,10 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     private void stopAllProcess() {
         stopForeground(true);
         isRunning = false;
+        tunProcessStarted = false;
         if (process != null) {
             process.destroy();
+            process = null;
         }
         V2rayCoreManager.getInstance().stopCore();
         try {
@@ -167,7 +173,25 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     }
 
     private void runTun2socks() {
-        ArrayList<String> cmd = new ArrayList<>(Arrays.asList(new File(getApplicationInfo().nativeLibraryDir, "libtun2socks.so").getAbsolutePath(),
+        if (tunProcessStarted) {
+            Log.w(TAG, "tun2socks start already requested");
+            return;
+        }
+        tunProcessStarted = true;
+
+        final File executable = new File(getApplicationInfo().nativeLibraryDir, "libtun2socks.so");
+        Log.i(TAG, "tun2socks executable=" + executable +
+                ", exists=" + executable.exists() +
+                ", executable=" + executable.canExecute() +
+                ", bytes=" + executable.length());
+
+        if (!executable.isFile() || !executable.canExecute()) {
+            Log.e(TAG, "tun2socks binary is not an extracted executable");
+            stopAllProcess();
+            return;
+        }
+
+        ArrayList<String> cmd = new ArrayList<>(Arrays.asList(executable.getAbsolutePath(),
                 "--netif-ipaddr", "26.26.26.2",
                 "--netif-netmask", "255.255.255.252",
                 "--socks-server-addr", "127.0.0.1:" + v2rayConfig.LOCAL_SOCKS5_PORT,
@@ -176,57 +200,76 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
                 "--enable-udprelay",
                 "--loglevel", "error"));
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-            processBuilder.redirectErrorStream(true);
-            process = processBuilder.directory(getApplicationContext().getFilesDir()).start();
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.directory(getApplicationContext().getFilesDir());
+            pb.redirectErrorStream(true);
+            final Process startedProcess = pb.start();
+            process = startedProcess;
+
+            // One supervisor per VPN session. Never recursively restart a rapidly
+            // exiting binary: that used to create hundreds of threads in seconds.
+            new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(startedProcess.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        Log.i(TAG, "tun2socks: " + line);
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed to read tun2socks output", e);
+                }
+            }, "Tun2socks_Output").start();
+
             new Thread(() -> {
                 try {
-                    process.waitFor();
-                    if (isRunning) {
-                        runTun2socks();
+                    int exitCode = startedProcess.waitFor();
+                    Log.e(TAG, "tun2socks exited with code=" + exitCode);
+                    if (isRunning && process == startedProcess) {
+                        stopAllProcess();
                     }
                 } catch (InterruptedException e) {
-                    //ignore
+                    Thread.currentThread().interrupt();
                 }
-            }, "Tun2socks_Thread").start();
+            }, "Tun2socks_Wait").start();
+
             sendFileDescriptor();
         } catch (Exception e) {
-            Log.e("VPN_SERVICE", "FAILED=>", e);
-            this.onDestroy();
+            Log.e(TAG, "Failed to launch tun2socks", e);
+            stopAllProcess();
         }
     }
 
     private void sendFileDescriptor() {
-        String localSocksFile = new File(getApplicationContext().getFilesDir(), "sock_path").getAbsolutePath();
-        FileDescriptor tunFd = mInterface.getFileDescriptor();
+        final String socketPath = new File(getApplicationContext().getFilesDir(),
+                "sock_path").getAbsolutePath();
+        final FileDescriptor tunFd = mInterface.getFileDescriptor();
         new Thread(() -> {
-            int tries = 0;
-            while (true) {
-                try {
-                    Thread.sleep(50L * tries);
-                    LocalSocket clientLocalSocket = new LocalSocket();
-                    clientLocalSocket.connect(new LocalSocketAddress(localSocksFile, LocalSocketAddress.Namespace.FILESYSTEM));
-                    if (!clientLocalSocket.isConnected()) {
-                        Log.e("SOCK_FILE", "Unable to connect to localSocksFile [" + localSocksFile + "]");
-                    } else {
-                        Log.e("SOCK_FILE", "connected to sock file [" + localSocksFile + "]");
-                    }
-                    OutputStream clientOutStream = clientLocalSocket.getOutputStream();
-                    clientLocalSocket.setFileDescriptorsForSend(new FileDescriptor[]{tunFd});
-                    clientOutStream.write(32);
-                    clientLocalSocket.setFileDescriptorsForSend(null);
-                    clientLocalSocket.shutdownOutput();
-                    clientLocalSocket.close();
-                    break;
+            for (int attempt = 0; attempt < 20 && isRunning; attempt++) {
+                try (LocalSocket socket = new LocalSocket()) {
+                    socket.connect(new LocalSocketAddress(
+                            socketPath, LocalSocketAddress.Namespace.FILESYSTEM));
+                    socket.setFileDescriptorsForSend(new FileDescriptor[]{tunFd});
+                    socket.getOutputStream().write(32);
+                    socket.getOutputStream().flush();
+                    socket.setFileDescriptorsForSend(null);
+                    Log.i(TAG, "TUN file descriptor delivered to tun2socks");
+                    return;
                 } catch (Exception e) {
-                    Log.e(V2rayVPNService.class.getSimpleName(), "sendFd failed =>", e);
-                    if (tries > 5) break;
-                    tries += 1;
+                    if (attempt == 19) {
+                        Log.e(TAG, "Unable to send TUN fd after 20 attempts", e);
+                        if (isRunning) stopAllProcess();
+                        return;
+                    }
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
                 }
             }
-        }, "sendFd_Thread").start();
+        }, "Tun2socks_SendFd").start();
     }
-
 
     @Override
     public void onDestroy() {

@@ -38,9 +38,11 @@ public class V2rayController {
                     if (intent == null) return;
                     Object state = intent.getSerializableExtra("STATE");
                     if (state instanceof AppConfigs.V2RAY_STATES) {
+                        String serviceMode = intent.getStringExtra("SERVICE_MODE");
+                        if (!V2rayConnectionCoordinator.acceptsStatusFrom(serviceMode)) return;
                         AppConfigs.V2RAY_STATE = (AppConfigs.V2RAY_STATES) state;
                         V2rayConnectionCoordinator.onConnectionState(
-                                (AppConfigs.V2RAY_STATES) state);
+                                (AppConfigs.V2RAY_STATES) state, serviceMode);
                     }
                 }
             };

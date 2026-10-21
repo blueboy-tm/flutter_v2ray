@@ -32,6 +32,7 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     private V2rayConfig v2rayConfig;
     private volatile boolean isRunning = false;
     private volatile boolean tunProcessStarted = false;
+    private boolean stoppingAllProcesses = false;
     private static final String TAG = "VPN_SERVICE";
 
     @Override
@@ -91,7 +92,9 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
         return START_NOT_STICKY;
     }
 
-    private void stopAllProcess() {
+    private synchronized void stopAllProcess() {
+        if (stoppingAllProcesses) return;
+        stoppingAllProcesses = true;
         stopForeground(true);
         isRunning = false;
         tunProcessStarted = false;
@@ -107,11 +110,12 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             Log.e("CANT_STOP", "SELF");
         }
         try {
-            mInterface.close();
+            if (mInterface != null) mInterface.close();
         } catch (Exception e) {
-            // ignored
+            Log.w(TAG, "Failed to close TUN interface", e);
+        } finally {
+            mInterface = null;
         }
-
     }
 
     private void setup() {
@@ -293,6 +297,13 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
 
     @Override
     public void onDestroy() {
+        // stopService() does not deliver STOP_SERVICE; close TUN, tun2socks and
+        // the native core before the system destroys this foreground service.
+        V2rayCoreManager manager = V2rayCoreManager.getInstance();
+        if (manager.v2rayServicesListener == this &&
+                (isRunning || process != null || mInterface != null || manager.isV2rayCoreRunning())) {
+            stopAllProcess();
+        }
         super.onDestroy();
     }
 

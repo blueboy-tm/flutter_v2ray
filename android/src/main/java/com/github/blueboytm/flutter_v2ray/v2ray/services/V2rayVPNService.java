@@ -98,6 +98,16 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
         builder.setMtu(1500);
         builder.addAddress("26.26.26.1", 30);
 
+        // Xray's Go sockets must use the underlying network rather than
+        // entering our own VPN tunnel, which otherwise creates a routing loop.
+        // This also excludes the host application's own traffic from the VPN.
+        try {
+            builder.addDisallowedApplication(getPackageName());
+            Log.i("VPN_SERVICE", "Excluded host package from VPN routes: " + getPackageName());
+        } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+            Log.e("VPN_SERVICE", "Unable to exclude host app from VPN", e);
+        }
+
         if (v2rayConfig.BYPASS_SUBNETS == null || v2rayConfig.BYPASS_SUBNETS.isEmpty()) {
             builder.addRoute("0.0.0.0", 0);
         } else {
@@ -141,6 +151,13 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
 
         try {
             mInterface = builder.establish();
+            if (mInterface == null) {
+                Log.e("VPN_SERVICE", "VpnService.Builder.establish returned null");
+                stopAllProcess();
+                return;
+            }
+            Log.i("VPN_SERVICE", "TUN established, fd=" + mInterface.getFd()
+                    + ", socksPort=" + v2rayConfig.LOCAL_SOCKS5_PORT);
             isRunning = true;
             runTun2socks();
         } catch (Exception e) {

@@ -20,22 +20,33 @@ import java.util.concurrent.TimeUnit;
 import libv2ray.Libv2ray;
 
 public class V2rayController {
+    private static BroadcastReceiver connectionStateReceiver;
 
-    public static void init(final Context context, final int app_icon, final String app_name) {
-        Utilities.copyAssets(context);
+    public static synchronized void init(final Context context, final int app_icon, final String app_name) {
+        Context appContext = context.getApplicationContext();
+        Utilities.copyAssets(appContext);
         AppConfigs.APPLICATION_ICON = app_icon;
         AppConfigs.APPLICATION_NAME = app_name;
 
-        BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context arg0, Intent arg1) {
-                AppConfigs.V2RAY_STATE = (AppConfigs.V2RAY_STATES) arg1.getExtras().getSerializable("STATE");
+        // initializeV2Ray may be called repeatedly; avoid leaking registrations.
+        if (connectionStateReceiver == null) {
+            BroadcastReceiver receiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context receiverContext, Intent intent) {
+                    if (intent == null) return;
+                    Object state = intent.getSerializableExtra("STATE");
+                    if (state instanceof AppConfigs.V2RAY_STATES) {
+                        AppConfigs.V2RAY_STATE = (AppConfigs.V2RAY_STATES) state;
+                    }
+                }
+            };
+            IntentFilter filter = new IntentFilter("V2RAY_CONNECTION_INFO");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                appContext.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                appContext.registerReceiver(receiver, filter);
             }
-        };
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(receiver, new IntentFilter("V2RAY_CONNECTION_INFO"), Context.RECEIVER_EXPORTED);
-        } else {
-            context.registerReceiver(receiver, new IntentFilter("V2RAY_CONNECTION_INFO"));
+            connectionStateReceiver = receiver;
         }
     }
 

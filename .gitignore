@@ -62,3 +62,6 @@ Temporary Items
 # iCloud generated files
 *.icloud
 
+
+# Xray Android artifact (resolved from GitHub Releases by Gradle)
+/android/libs/*.aar

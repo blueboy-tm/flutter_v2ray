@@ -40,7 +40,7 @@ public final class V2rayCoreManager {
     // CoreCallbackHandler replaces the legacy V2RayVPNServiceSupportsSet binding.
     public final CoreController coreController = Libv2ray.newCoreController(new CoreCallbackHandler() {
         @Override
-        public int startup() {
+        public long startup() {
             if (v2rayServicesListener != null) {
                 try {
                     // VPN mode starts the existing tun2socks bridge here.
@@ -54,14 +54,14 @@ public final class V2rayCoreManager {
         }
 
         @Override
-        public int shutdown() {
+        public long shutdown() {
             // stopCore() owns service shutdown; calling it here would recursively
             // re-enter CoreController.stopLoop() while its Go mutex is held.
             return 0;
         }
 
         @Override
-        public int onEmitStatus(int code, String message) {
+        public long onEmitStatus(long code, String message) {
             return 0;
         }
     });

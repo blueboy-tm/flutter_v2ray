@@ -2,6 +2,8 @@ package com.github.blueboytm.flutter_v2ray.v2ray.services;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -14,12 +16,22 @@ import com.github.blueboytm.flutter_v2ray.v2ray.utils.V2rayConfig;
 
 
 public class V2rayProxyOnlyService extends Service implements V2rayServicesListener {
+    private V2rayDelayReceiver delayReceiver;
+
 
 
     @Override
     public void onCreate() {
         super.onCreate();
         V2rayCoreManager.getInstance().setUpListener(this);
+        delayReceiver = new V2rayDelayReceiver(AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY);
+        IntentFilter delayFilter = new IntentFilter(
+                com.github.blueboytm.flutter_v2ray.v2ray.V2rayController.ACTION_DELAY_REQUEST);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(delayReceiver, delayFilter, android.content.Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(delayReceiver, delayFilter);
+        }
     }
 
     @Override
@@ -84,6 +96,10 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
         V2rayCoreManager manager = V2rayCoreManager.getInstance();
         if (manager.v2rayServicesListener == this && manager.isV2rayCoreRunning()) {
             manager.stopCore();
+        }
+        if (delayReceiver != null) {
+            unregisterReceiver(delayReceiver);
+            delayReceiver = null;
         }
         super.onDestroy();
         com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(

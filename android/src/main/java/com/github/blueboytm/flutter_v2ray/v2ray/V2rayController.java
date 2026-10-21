@@ -87,8 +87,10 @@ public class V2rayController {
         } else {
             return;
         }
-        stop_intent.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.STOP_SERVICE);
-        context.startService(stop_intent);
+        // Stopping a running service does not start a new background service.
+        // Context.startService(STOP_SERVICE) throws
+        // BackgroundServiceStartNotAllowedException on Android 12+ (#66).
+        context.stopService(stop_intent);
         AppConfigs.V2RAY_CONFIG = null;
     }
 

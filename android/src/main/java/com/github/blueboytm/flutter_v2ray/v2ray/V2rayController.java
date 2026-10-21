@@ -51,47 +51,35 @@ public class V2rayController {
     }
 
     public static void changeConnectionMode(final AppConfigs.V2RAY_CONNECTION_MODES connection_mode) {
-        if (getConnectionState() == AppConfigs.V2RAY_STATES.V2RAY_DISCONNECTED) {
-            AppConfigs.V2RAY_CONNECTION_MODE = connection_mode;
-        }
+        // Do not gate this on a cross-process status broadcast: the state can
+        // still be CONNECTED while an old service is shutting down.
+        AppConfigs.V2RAY_CONNECTION_MODE = connection_mode;
     }
 
-    public static void StartV2ray(final Context context, final String remark, final String config, final ArrayList<String> blocked_apps, final ArrayList<String> bypass_subnets) {
-        AppConfigs.V2RAY_CONFIG = Utilities.parseV2rayJsonFile(remark, config, blocked_apps, bypass_subnets);
-        if (AppConfigs.V2RAY_CONFIG == null) {
+    public static void StartV2ray(final Context context, final String remark, final String config,
+                                  final ArrayList<String> blocked_apps,
+                                  final ArrayList<String> bypass_subnets) {
+        StartV2ray(context, remark, config, blocked_apps, bypass_subnets,
+                AppConfigs.V2RAY_CONNECTION_MODE);
+    }
+
+    public static void StartV2ray(final Context context, final String remark, final String config,
+                                  final ArrayList<String> blocked_apps,
+                                  final ArrayList<String> bypass_subnets,
+                                  final AppConfigs.V2RAY_CONNECTION_MODES mode) {
+        final com.github.blueboytm.flutter_v2ray.v2ray.utils.V2rayConfig parsed =
+                Utilities.parseV2rayJsonFile(remark, config, blocked_apps, bypass_subnets);
+        if (parsed == null) {
+            Log.e("V2RAY_SESSION", "Cannot start: invalid V2Ray configuration");
             return;
         }
-        Intent start_intent;
-        if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
-            start_intent = new Intent(context, V2rayProxyOnlyService.class);
-        } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
-            start_intent = new Intent(context, V2rayVPNService.class);
-        } else {
-            return;
-        }
-        start_intent.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.START_SERVICE);
-        start_intent.putExtra("V2RAY_CONFIG", AppConfigs.V2RAY_CONFIG);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
-            context.startForegroundService(start_intent);
-        } else {
-            context.startService(start_intent);
-        }
+        String signature = mode + ":" + remark + ":" + parsed.V2RAY_FULL_JSON_CONFIG
+                + ":" + blocked_apps + ":" + bypass_subnets;
+        V2rayConnectionCoordinator.start(context, parsed, mode, signature);
     }
 
     public static void StopV2ray(final Context context) {
-        Intent stop_intent;
-        if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
-            stop_intent = new Intent(context, V2rayProxyOnlyService.class);
-        } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
-            stop_intent = new Intent(context, V2rayVPNService.class);
-        } else {
-            return;
-        }
-        // Stopping a running service does not start a new background service.
-        // Context.startService(STOP_SERVICE) throws
-        // BackgroundServiceStartNotAllowedException on Android 12+ (#66).
-        context.stopService(stop_intent);
-        AppConfigs.V2RAY_CONFIG = null;
+        V2rayConnectionCoordinator.stop(context);
     }
 
     public static long getConnectedV2rayServerDelay(Context context, String url) {

@@ -31,7 +31,7 @@ public final class V2rayConnectionCoordinator {
     private static final Handler HANDLER = new Handler(Looper.getMainLooper());
     private static final long STOP_TIMEOUT_MS = 5000L;
 
-    private static boolean requestedRunning;
+    private static volatile boolean requestedRunning;
     private static String requestedSignature;
     private static AppConfigs.V2RAY_CONNECTION_MODES requestedMode;
     private static boolean awaitingVpn;
@@ -42,6 +42,10 @@ public final class V2rayConnectionCoordinator {
     private static Runnable stopTimeout;
 
     private V2rayConnectionCoordinator() {}
+
+    public static boolean isRequestedRunning() {
+        return requestedRunning;
+    }
 
     public static void start(Context context, V2rayConfig config,
                              AppConfigs.V2RAY_CONNECTION_MODES mode,

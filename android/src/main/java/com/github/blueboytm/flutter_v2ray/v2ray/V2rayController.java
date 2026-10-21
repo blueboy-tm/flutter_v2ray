@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.util.Log;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
 import com.github.blueboytm.flutter_v2ray.v2ray.services.V2rayProxyOnlyService;
@@ -81,10 +82,11 @@ public class V2rayController {
     }
 
     public static long getConnectedV2rayServerDelay(Context context) {
-        if (getConnectionState() != AppConfigs.V2RAY_STATES.V2RAY_CONNECTED) {
-            return -1;
-        }
-
+        // The Flutter process and the VPN daemon are separate Android processes.
+        // The broadcast-backed local state can be stale even when Xray is running.
+        // Always ask the active service; it owns the real native CoreController.
+        Log.i("V2RAY_DELAY", "Request connected delay; cachedState=" + getConnectionState()
+                + ", mode=" + AppConfigs.V2RAY_CONNECTION_MODE);
         Intent checkDelay;
         if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
             checkDelay = new Intent(context, V2rayProxyOnlyService.class);
@@ -104,6 +106,7 @@ public class V2rayController {
                 } catch (Exception ignored) {
                     delay[0] = -1;
                 }
+                Log.i("V2RAY_DELAY", "Received connected delay broadcast: " + delay[0]);
                 latch.countDown();
             }
         };
@@ -121,6 +124,7 @@ public class V2rayController {
             context.startService(checkDelay);
             // Native Xray delay measurement can take up to 12 seconds.
             if (!latch.await(15, TimeUnit.SECONDS)) {
+                Log.w("V2RAY_DELAY", "Timed out waiting for connected delay broadcast");
                 return -1;
             }
             return delay[0];

@@ -2,6 +2,7 @@ package com.github.blueboytm.flutter_v2ray.v2ray.services;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.net.VpnService;
@@ -27,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class V2rayVPNService extends VpnService implements V2rayServicesListener {
+    private V2rayDelayReceiver delayReceiver;
+
     private ParcelFileDescriptor mInterface;
     private Process process;
     private V2rayConfig v2rayConfig;
@@ -39,6 +42,14 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     public void onCreate() {
         super.onCreate();
         V2rayCoreManager.getInstance().setUpListener(this);
+        delayReceiver = new V2rayDelayReceiver(AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN);
+        IntentFilter delayFilter = new IntentFilter(
+                com.github.blueboytm.flutter_v2ray.v2ray.V2rayController.ACTION_DELAY_REQUEST);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(delayReceiver, delayFilter, android.content.Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(delayReceiver, delayFilter);
+        }
     }
 
     @Override
@@ -306,6 +317,10 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
         if (manager.v2rayServicesListener == this &&
                 (isRunning || process != null || mInterface != null || manager.isV2rayCoreRunning())) {
             stopAllProcess();
+        }
+        if (delayReceiver != null) {
+            unregisterReceiver(delayReceiver);
+            delayReceiver = null;
         }
         super.onDestroy();
         com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(

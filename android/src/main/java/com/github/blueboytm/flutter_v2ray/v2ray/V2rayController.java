@@ -81,48 +81,55 @@ public class V2rayController {
     }
 
     public static long getConnectedV2rayServerDelay(Context context) {
-        if (V2rayController.getConnectionState() != AppConfigs.V2RAY_STATES.V2RAY_CONNECTED) {
+        if (getConnectionState() != AppConfigs.V2RAY_STATES.V2RAY_CONNECTED) {
             return -1;
         }
-        Intent check_delay;
+
+        Intent checkDelay;
         if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY) {
-            check_delay = new Intent(context, V2rayProxyOnlyService.class);
+            checkDelay = new Intent(context, V2rayProxyOnlyService.class);
         } else if (AppConfigs.V2RAY_CONNECTION_MODE == AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN) {
-            check_delay = new Intent(context, V2rayVPNService.class);
+            checkDelay = new Intent(context, V2rayVPNService.class);
         } else {
             return -1;
         }
-        final long[] delay = {-1};
 
+        final long[] delay = {-1};
         final CountDownLatch latch = new CountDownLatch(1);
-        check_delay.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY);
-        context.startService(check_delay);
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
-            public void onReceive(Context arg0, Intent arg1) {
-                String delayString = arg1.getExtras().getString("DELAY");
-                delay[0] = Long.parseLong(delayString);
-                context.unregisterReceiver(this);
+            public void onReceive(Context receiverContext, Intent intent) {
+                try {
+                    delay[0] = Long.parseLong(intent.getStringExtra("DELAY"));
+                } catch (Exception ignored) {
+                    delay[0] = -1;
+                }
                 latch.countDown();
             }
         };
 
-        IntentFilter delayIntentFilter = new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.registerReceiver(receiver, delayIntentFilter, Context.RECEIVER_EXPORTED);
-        }else{
-            context.registerReceiver(receiver, delayIntentFilter);
+        // Register before starting the service; otherwise a fast reply is lost.
+        IntentFilter filter = new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            context.registerReceiver(receiver, filter);
         }
 
         try {
-            boolean received = latch.await(3000, TimeUnit.MILLISECONDS);
-            if (!received) {
+            checkDelay.putExtra("COMMAND", AppConfigs.V2RAY_SERVICE_COMMANDS.MEASURE_DELAY);
+            context.startService(checkDelay);
+            // Native Xray delay measurement can take up to 12 seconds.
+            if (!latch.await(15, TimeUnit.SECONDS)) {
                 return -1;
             }
+            return delay[0];
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            return -1;
+        } finally {
+            context.unregisterReceiver(receiver);
         }
-        return delay[0];
     }
 
     public static long getV2rayServerDelay(final String config, final String url) {

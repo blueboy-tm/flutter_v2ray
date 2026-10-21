@@ -15,6 +15,9 @@ public class V2rayReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
+            if (intent == null || !V2rayConnectionCoordinator.acceptsStatusFrom(
+                    intent.getStringExtra("SERVICE_MODE"))) return;
+            if (vpnStatusSink == null) return;
             ArrayList<String> list = new ArrayList<>();
             list.add(intent.getExtras().getString("DURATION"));
             list.add(String.valueOf(intent.getLongExtra("UPLOAD_SPEED", 0)));

@@ -37,6 +37,8 @@ public class V2rayController {
                     Object state = intent.getSerializableExtra("STATE");
                     if (state instanceof AppConfigs.V2RAY_STATES) {
                         AppConfigs.V2RAY_STATE = (AppConfigs.V2RAY_STATES) state;
+                        V2rayConnectionCoordinator.onConnectionState(
+                                (AppConfigs.V2RAY_STATES) state);
                     }
                 }
             };

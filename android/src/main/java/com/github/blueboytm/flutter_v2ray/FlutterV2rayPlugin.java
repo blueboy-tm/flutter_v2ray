@@ -1,6 +1,8 @@
 package com.github.blueboytm.flutter_v2ray;
 
 import android.annotation.SuppressLint;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,6 +13,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 
 import com.github.blueboytm.flutter_v2ray.v2ray.V2rayController;
 import com.github.blueboytm.flutter_v2ray.v2ray.V2rayReceiver;
@@ -29,9 +32,11 @@ import io.flutter.plugin.common.PluginRegistry;
 /**
  * FlutterV2rayPlugin
  */
-public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginRegistry.ActivityResultListener {
+public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginRegistry.ActivityResultListener,
+        PluginRegistry.RequestPermissionsResultListener {
 
     private static final int REQUEST_CODE_VPN_PERMISSION = 24;
+    private static final int REQUEST_CODE_NOTIFICATION_PERMISSION = 25;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private MethodChannel vpnControlMethod;
     private EventChannel vpnStatusEvent;
@@ -119,22 +124,25 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
                         break;
                     }
                     if (pendingResult != null) {
-                        result.error("PERMISSION_IN_PROGRESS", "Another VPN permission request is pending", null);
+                        result.error("PERMISSION_IN_PROGRESS", "A permission request is already pending", null);
                         break;
                     }
-                    // Notification permission is optional for foreground VPN services on
-                    // Android 13+. Do not launch two permission dialogs concurrently.
-                    try {
-                        final Intent request = VpnService.prepare(activity);
-                        if (request == null) {
-                            result.success(true);
-                        } else {
-                            pendingResult = result;
-                            activity.startActivityForResult(request, REQUEST_CODE_VPN_PERMISSION);
+                    pendingResult = result;
+                    // Request notification access first, then VPN permission. These
+                    // must be separate dialogs, never requested concurrently.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS)
+                                    != PackageManager.PERMISSION_GRANTED) {
+                        try {
+                            ActivityCompat.requestPermissions(activity,
+                                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                                    REQUEST_CODE_NOTIFICATION_PERMISSION);
+                        } catch (RuntimeException e) {
+                            // Notification permission is optional; VPN can still work.
+                            requestVpnPermission();
                         }
-                    } catch (RuntimeException e) {
-                        pendingResult = null;
-                        result.error("VPN_PERMISSION_FAILED", e.getMessage(), null);
+                    } else {
+                        requestVpnPermission();
                     }
                     break;
                 default:
@@ -143,6 +151,37 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
         });
     }
 
+
+    private void requestVpnPermission() {
+        MethodChannel.Result callback = pendingResult;
+        if (callback == null) return;
+        if (activity == null) {
+            pendingResult = null;
+            callback.error("NO_ACTIVITY", "Activity detached during VPN permission request", null);
+            return;
+        }
+        try {
+            Intent request = VpnService.prepare(activity);
+            if (request == null) {
+                pendingResult = null;
+                callback.success(true);
+            } else {
+                activity.startActivityForResult(request, REQUEST_CODE_VPN_PERMISSION);
+            }
+        } catch (RuntimeException e) {
+            pendingResult = null;
+            callback.error("VPN_PERMISSION_FAILED", e.getMessage(), null);
+        }
+    }
+
+    @Override
+    public boolean onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                              @NonNull int[] grantResults) {
+        if (requestCode != REQUEST_CODE_NOTIFICATION_PERMISSION) return false;
+        // Notification permission may be denied; this must not deny VPN access.
+        requestVpnPermission();
+        return true;
+    }
 
     private void registerStatusReceiver() {
         if (applicationContext == null || vpnStatusSink == null || statusReceiverRegistered) return;
@@ -183,6 +222,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
         activityBinding = binding;
         activity = binding.getActivity();
         binding.addActivityResultListener(this);
+        binding.addRequestPermissionsResultListener(this);
     }
 
     @Override
@@ -206,7 +246,10 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
     }
 
     private void detachActivity() {
-        if (activityBinding != null) activityBinding.removeActivityResultListener(this);
+        if (activityBinding != null) {
+            activityBinding.removeActivityResultListener(this);
+            activityBinding.removeRequestPermissionsResultListener(this);
+        }
         activityBinding = null;
         activity = null;
     }

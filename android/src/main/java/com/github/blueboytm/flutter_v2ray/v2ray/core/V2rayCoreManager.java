@@ -269,7 +269,7 @@ public final class V2rayCoreManager {
         return "";
     }
 
-    private void showNotification(final V2rayConfig v2rayConfig) {
+    public void showNotification(final V2rayConfig v2rayConfig) {
         Service context = v2rayServicesListener.getService();
         if (context == null) {
             return;

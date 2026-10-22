@@ -7,47 +7,74 @@ class ShadowSocksURL extends V2RayURL {
     if (!url.startsWith('ss://')) {
       throw ArgumentError('url is invalid');
     }
-    final temp = Uri.tryParse(url);
-    if (temp == null) {
+    Uri? parsed = Uri.tryParse(url);
+    if (parsed == null) throw ArgumentError('url is invalid');
+
+    // SIP002: ss://base64(method:password)@host:port and
+    //          ss://method:password@host:port.
+    // Legacy: ss://base64(method:password@host:port).
+    if (parsed.host.isEmpty) {
+      final raw = url.substring(5).split('#').first.split('?').first;
+      try {
+        final decoded = utf8.decode(base64Decode(base64.normalize(raw)));
+        parsed = Uri.tryParse('ss://$decoded');
+      } catch (_) {
+        throw ArgumentError('url is invalid');
+      }
+    }
+    if (parsed == null || parsed.host.isEmpty) {
       throw ArgumentError('url is invalid');
     }
-    uri = temp;
-    if (uri.userInfo.isNotEmpty) {
-      String raw = uri.userInfo;
-      if (raw.length % 4 > 0) {
-        raw += "=" * (4 - raw.length % 4);
-      }
+    uri = parsed;
+
+    var credentials = uri.userInfo;
+    if (!credentials.contains(':')) {
       try {
-        final methodpass = utf8.decode(base64Decode(raw));
-        method = methodpass.split(':')[0];
-        password = methodpass.substring(method.length + 1);
-      } catch (_) {}
+        credentials =
+            utf8.decode(base64Decode(base64.normalize(credentials)));
+      } catch (_) {
+        throw ArgumentError('Invalid Shadowsocks credentials');
+      }
+    }
+    final splitAt = credentials.indexOf(':');
+    if (splitAt <= 0) {
+      throw ArgumentError('Invalid Shadowsocks credentials');
+    }
+    method = Uri.decodeComponent(credentials.substring(0, splitAt));
+    password = Uri.decodeComponent(credentials.substring(splitAt + 1));
+    if (method.isEmpty || password.isEmpty) {
+      throw ArgumentError('Invalid Shadowsocks credentials');
     }
 
-    if (uri.queryParameters.isNotEmpty) {
-      var sni = super.populateTransportSettings(
-        transport: uri.queryParameters['type'] ?? "tcp",
-        headerType: uri.queryParameters['headerType'],
-        host: uri.queryParameters["host"],
-        path: uri.queryParameters["path"],
-        seed: uri.queryParameters["seed"],
-        quicSecurity: uri.queryParameters["quicSecurity"],
-        key: uri.queryParameters["key"],
-        mode: uri.queryParameters["mode"],
-        serviceName: uri.queryParameters["serviceName"],
+    final params = uri.queryParameters;
+    if (params.isNotEmpty) {
+      final sni = populateTransportSettings(
+        transport: params['type'] ?? 'tcp',
+        headerType: params['headerType'],
+        host: params['host'],
+        path: params['path'],
+        seed: params['seed'],
+        quicSecurity: params['quicSecurity'],
+        key: params['key'],
+        mode: params['mode'],
+        serviceName: params['serviceName'],
       );
-      super.populateTlsSettings(
-        streamSecurity: uri.queryParameters['security'] ?? '',
+      populateTlsSettings(
+        streamSecurity: params['security'] ?? '',
         allowInsecure: allowInsecure,
-        sni: uri.queryParameters["sni"] ?? sni,
-        fingerprint: streamSetting['tlsSettings']?['fingerprint'],
-        alpns: uri.queryParameters['alpn'],
+        sni: params['sni'] ?? sni,
+        fingerprint: params['fp'],
+        alpns: params['alpn'],
         publicKey: null,
         shortId: null,
         spiderX: null,
       );
     }
   }
+
+  late final Uri uri;
+  late final String method;
+  late final String password;
 
   @override
   String get address => uri.host;
@@ -58,46 +85,22 @@ class ShadowSocksURL extends V2RayURL {
   @override
   String get remark => Uri.decodeFull(uri.fragment.replaceAll('+', '%20'));
 
-  late final Uri uri;
-
-  String method = "none";
-
-  String password = "";
-
   @override
   Map<String, dynamic> get outbound1 => {
-        "tag": "proxy",
-        "protocol": "shadowsocks",
-        "settings": {
-          "vnext": null,
-          "servers": [
+        'tag': 'proxy',
+        'protocol': 'shadowsocks',
+        'settings': {
+          'servers': [
             {
-              "address": address,
-              "method": method,
-              "ota": false,
-              "password": password,
-              "port": port,
-              "level": level,
-              "email": null,
-              "flow": null,
-              "ivCheck": null,
-              "users": null
+              'address': address,
+              'method': method,
+              'password': password,
+              'port': port,
+              'level': level,
             }
           ],
-          "response": null,
-          "network": null,
-          "address": null,
-          "port": null,
-          "domainStrategy": null,
-          "redirect": null,
-          "userLevel": null,
-          "inboundTag": null,
-          "secretKey": null,
-          "peers": null
         },
-        "streamSettings": streamSetting,
-        "proxySettings": null,
-        "sendThrough": null,
-        "mux": {"enabled": false, "concurrency": 8}
+        'streamSettings': streamSetting,
+        'mux': {'enabled': false, 'concurrency': 8},
       };
 }

@@ -74,6 +74,16 @@ public class FlutterV2rayPlugin implements FlutterPlugin, ActivityAware, PluginR
         vpnControlMethod.setMethodCallHandler((call, result) -> {
             switch (call.method) {
                 case "startV2Ray":
+                    // Proxy-only clients may never call requestPermission().
+                    // Ask for notification visibility when starting from an Activity.
+                    if (activity != null && pendingResult == null &&
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS)
+                                    != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(activity,
+                                new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                                REQUEST_CODE_NOTIFICATION_PERMISSION);
+                    }
                     AppConfigs.NOTIFICATION_DISCONNECT_BUTTON_NAME = call.argument("notificationDisconnectButtonName");
                     // Explicitly select the mode for every start request. Otherwise,
                     // switching from Proxy Only back to VPN leaves the old mode active.

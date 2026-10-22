@@ -2,8 +2,12 @@ package com.github.blueboytm.flutter_v2ray.v2ray.services;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -17,12 +21,44 @@ import com.github.blueboytm.flutter_v2ray.v2ray.utils.V2rayConfig;
 
 public class V2rayProxyOnlyService extends Service implements V2rayServicesListener {
     private V2rayDelayReceiver delayReceiver;
+    private HandlerThread stopCommandThread;
+    private BroadcastReceiver stopCommandReceiver;
 
 
 
     @Override
     public void onCreate() {
         super.onCreate();
+        stopCommandThread = new HandlerThread("V2Ray_ProxyControl");
+        stopCommandThread.start();
+        stopCommandReceiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context context, Intent intent) {
+                if (intent == null || !"PROXY_ONLY".equals(intent.getStringExtra("MODE"))) return;
+                Log.i("V2RAY_PROXY_SERVICE", "Received direct STOP command in daemon process");
+                stopSelf();
+                new Thread(() -> {
+                    try {
+                        V2rayCoreManager manager = V2rayCoreManager.getInstance();
+                        if (manager.v2rayServicesListener == V2rayProxyOnlyService.this) manager.stopCore();
+                    } catch (Exception e) {
+                        Log.e("V2RAY_PROXY_SERVICE", "Failed direct core stop", e);
+                    } finally {
+                        com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(
+                                getApplicationContext(),
+                                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.DAEMON_PROXY);
+                    }
+                }, "V2Ray_ProxyDirectShutdown").start();
+            }
+        };
+        IntentFilter stopFilter = new IntentFilter(
+                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.ACTION_STOP_DAEMON);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stopCommandReceiver, stopFilter, null,
+                    new Handler(stopCommandThread.getLooper()), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(stopCommandReceiver, stopFilter, null,
+                    new Handler(stopCommandThread.getLooper()));
+        }
         V2rayCoreManager.getInstance().setUpListener(this);
         delayReceiver = new V2rayDelayReceiver(AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY);
         IntentFilter delayFilter = new IntentFilter(
@@ -106,6 +142,14 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
         if (delayReceiver != null) {
             unregisterReceiver(delayReceiver);
             delayReceiver = null;
+        }
+        if (stopCommandReceiver != null) {
+            unregisterReceiver(stopCommandReceiver);
+            stopCommandReceiver = null;
+        }
+        if (stopCommandThread != null) {
+            stopCommandThread.quitSafely();
+            stopCommandThread = null;
         }
         super.onDestroy();
         // Shutdown of Go's native loop can block behind an in-flight delay

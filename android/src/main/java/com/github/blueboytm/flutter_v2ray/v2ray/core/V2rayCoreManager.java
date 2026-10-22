@@ -161,6 +161,7 @@ public final class V2rayCoreManager {
             Log.e(V2rayCoreManager.class.getSimpleName(), "setUpListener => new initialize from " + v2rayServicesListener.getService().getClass().getSimpleName());
         } catch (Exception e) {
             Log.e(V2rayCoreManager.class.getSimpleName(), "setUpListener failed => ", e);
+            Log.e("VPN_SERVICE", "setUpListener failed", e);
             isLibV2rayCoreInitialized = false;
         }
     }
@@ -169,6 +170,7 @@ public final class V2rayCoreManager {
         V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_CONNECTING;
         if (!isLibV2rayCoreInitialized) {
             Log.e("V2RAY_CORE", "startCore failed: initCoreEnv did not complete");
+            Log.e("VPN_SERVICE", "Core initialization missing; listener=" + v2rayServicesListener);
             return false;
         }
         if (isV2rayCoreRunning()) {
@@ -186,6 +188,7 @@ public final class V2rayCoreManager {
             Log.i("V2RAY_CORE", "startLoop returned; isRunning=" + started);
             if (!started) {
                 Log.e("V2RAY_CORE", "startLoop returned without a running core");
+                Log.e("VPN_SERVICE", "startLoop returned but isRunning=false; check config and native logs");
                 V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_DISCONNECTED;
                 return false;
             }
@@ -201,6 +204,7 @@ public final class V2rayCoreManager {
             // the blocking native startLoop; do not delay promotion until here.
         } catch (Exception e) {
             Log.e("V2RAY_CORE", "startCore threw exception", e);
+            Log.e("VPN_SERVICE", "startCore threw exception", e);
             return false;
         }
         return true;

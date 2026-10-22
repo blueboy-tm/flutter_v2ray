@@ -23,6 +23,8 @@ import com.github.blueboytm.flutter_v2ray.v2ray.utils.V2rayConfig;
 public final class V2rayConnectionCoordinator {
     public static final String ACTION_DAEMON_STOPPED =
             "com.github.blueboytm.flutter_v2ray.DAEMON_STOPPED";
+    public static final String ACTION_STOP_DAEMON =
+            "com.github.blueboytm.flutter_v2ray.STOP_DAEMON";
     public static final String EXTRA_DAEMON = "DAEMON";
     public static final String DAEMON_VPN = "VPN";
     public static final String DAEMON_PROXY = "PROXY";
@@ -114,9 +116,27 @@ public final class V2rayConnectionCoordinator {
             disconnected.putExtra("UPLOAD_TRAFFIC", 0L);
             disconnected.putExtra("DOWNLOAD_TRAFFIC", 0L);
             appContext.sendBroadcast(disconnected);
-            appContext.stopService(new Intent(appContext, V2rayVPNService.class));
-            appContext.stopService(new Intent(appContext, V2rayProxyOnlyService.class));
+            // stopService() alone can wait indefinitely for onDestroy() if
+            // the daemon main thread is blocked in a native call.
+            // Send a direct command to receivers bound to dedicated HandlerThreads.
+            requestDirectStop(appContext);
+            HANDLER.postDelayed(() -> {
+                if (!requestedRunning) {
+                    Log.i(TAG, "Stop fallback: stopService for both daemons");
+                    appContext.stopService(new Intent(appContext, V2rayVPNService.class));
+                    appContext.stopService(new Intent(appContext, V2rayProxyOnlyService.class));
+                }
+            }, 1200L);
         });
+    }
+
+    private static void requestDirectStop(Context context) {
+        for (String mode : new String[]{"VPN_TUN", "PROXY_ONLY"}) {
+            Intent request = new Intent(ACTION_STOP_DAEMON);
+            request.setPackage(context.getPackageName());
+            request.putExtra("MODE", mode);
+            context.sendBroadcast(request);
+        }
     }
 
     public static boolean acceptsStatusFrom(String serviceMode) {
@@ -160,6 +180,7 @@ public final class V2rayConnectionCoordinator {
 
         // Both services share a daemon process. Wait for onDestroy() signals so
         // an old core's cleanup cannot tear down the replacement core.
+        requestDirectStop(context);
         awaitingVpn = context.stopService(new Intent(context, V2rayVPNService.class));
         awaitingProxy = context.stopService(new Intent(context, V2rayProxyOnlyService.class));
         Log.i(TAG, "Awaiting service teardown: vpn=" + awaitingVpn +

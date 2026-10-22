@@ -29,7 +29,7 @@ public final class V2rayConnectionCoordinator {
 
     private static final String TAG = "V2RAY_SESSION";
     private static final Handler HANDLER = new Handler(Looper.getMainLooper());
-    private static final long STOP_TIMEOUT_MS = 5000L;
+    private static final long STOP_TIMEOUT_MS = 25000L;
 
     private static volatile boolean requestedRunning;
     private static String requestedSignature;
@@ -101,7 +101,19 @@ public final class V2rayConnectionCoordinator {
             pendingStart = null;
             clearStopWait();
             AppConfigs.V2RAY_CONFIG = null;
+            AppConfigs.V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_DISCONNECTED;
             Log.i(TAG, "Stopping both daemon services");
+            // Show the disconnect immediately in Flutter; the native Go
+            // shutdown can still be cleaning up an in-flight delay request.
+            Intent disconnected = new Intent("V2RAY_CONNECTION_INFO");
+            disconnected.setPackage(appContext.getPackageName());
+            disconnected.putExtra("STATE", AppConfigs.V2RAY_STATES.V2RAY_DISCONNECTED);
+            disconnected.putExtra("DURATION", "00:00:00");
+            disconnected.putExtra("UPLOAD_SPEED", 0L);
+            disconnected.putExtra("DOWNLOAD_SPEED", 0L);
+            disconnected.putExtra("UPLOAD_TRAFFIC", 0L);
+            disconnected.putExtra("DOWNLOAD_TRAFFIC", 0L);
+            appContext.sendBroadcast(disconnected);
             appContext.stopService(new Intent(appContext, V2rayVPNService.class));
             appContext.stopService(new Intent(appContext, V2rayProxyOnlyService.class));
         });

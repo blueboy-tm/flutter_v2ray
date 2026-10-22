@@ -59,7 +59,6 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
             registerReceiver(stopCommandReceiver, stopFilter, null,
                     new Handler(stopCommandThread.getLooper()));
         }
-        V2rayCoreManager.getInstance().setUpListener(this);
         delayReceiver = new V2rayDelayReceiver(AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY);
         IntentFilter delayFilter = new IntentFilter(
                 com.github.blueboytm.flutter_v2ray.v2ray.V2rayController.ACTION_DELAY_REQUEST);
@@ -96,7 +95,7 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
             // A foreground service MUST call startForeground() promptly,
             // before any potentially blocking native Xray initialization.
             try {
-                V2rayCoreManager.getInstance().showNotification(v2rayConfig);
+                V2rayCoreManager.showNotification(this, v2rayConfig);
             } catch (RuntimeException e) {
                 Log.e("V2RAY_PROXY_SERVICE", "Foreground promotion failed", e);
                 stopSelfResult(startId);
@@ -107,6 +106,7 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
             new Thread(() -> {
                 try {
                     V2rayCoreManager manager = V2rayCoreManager.getInstance();
+                    manager.setUpListener(V2rayProxyOnlyService.this);
                     if (!manager.isV2rayCoreRunning() &&
                             !manager.startCore(configToStart)) {
                         Log.e("V2RAY_PROXY_SERVICE", "Native core failed to start");

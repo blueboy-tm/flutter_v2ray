@@ -168,7 +168,7 @@ public final class V2rayCoreManager {
     public boolean startCore(final V2rayConfig v2rayConfig) {
         V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_CONNECTING;
         if (!isLibV2rayCoreInitialized) {
-            Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed => LibV2rayCore should be initialize before start.");
+            Log.e("V2RAY_CORE", "startCore failed: initCoreEnv did not complete");
             return false;
         }
         if (isV2rayCoreRunning()) {
@@ -179,8 +179,13 @@ public final class V2rayCoreManager {
         }
         try {
             // tunFd=0: retain the existing external tun2socks VPN pipeline.
+            Log.i("V2RAY_CORE", "startLoop enter; thread=" + Thread.currentThread().getName()
+                    + ", configBytes=" + v2rayConfig.V2RAY_FULL_JSON_CONFIG.length());
             coreController.startLoop(v2rayConfig.V2RAY_FULL_JSON_CONFIG, 0);
-            if (!isV2rayCoreRunning()) {
+            boolean started = isV2rayCoreRunning();
+            Log.i("V2RAY_CORE", "startLoop returned; isRunning=" + started);
+            if (!started) {
+                Log.e("V2RAY_CORE", "startLoop returned without a running core");
                 V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_DISCONNECTED;
                 return false;
             }
@@ -195,7 +200,7 @@ public final class V2rayCoreManager {
             // The service already called startForeground() before entering
             // the blocking native startLoop; do not delay promotion until here.
         } catch (Exception e) {
-            Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed =>", e);
+            Log.e("V2RAY_CORE", "startCore threw exception", e);
             return false;
         }
         return true;

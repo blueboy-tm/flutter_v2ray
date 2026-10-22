@@ -2,11 +2,15 @@ package com.github.blueboytm.flutter_v2ray.v2ray.services;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.IntentFilter;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.net.VpnService;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
@@ -29,6 +33,8 @@ import java.util.Arrays;
 
 public class V2rayVPNService extends VpnService implements V2rayServicesListener {
     private V2rayDelayReceiver delayReceiver;
+    private HandlerThread stopCommandThread;
+    private BroadcastReceiver stopCommandReceiver;
 
     private ParcelFileDescriptor mInterface;
     private Process process;
@@ -41,6 +47,24 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     @Override
     public void onCreate() {
         super.onCreate();
+        stopCommandThread = new HandlerThread("V2Ray_VpnControl");
+        stopCommandThread.start();
+        stopCommandReceiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context context, Intent intent) {
+                if (intent == null || !"VPN_TUN".equals(intent.getStringExtra("MODE"))) return;
+                Log.i(TAG, "Received direct STOP command in daemon process");
+                stopAllProcess();
+            }
+        };
+        IntentFilter stopFilter = new IntentFilter(
+                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.ACTION_STOP_DAEMON);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stopCommandReceiver, stopFilter, null,
+                    new Handler(stopCommandThread.getLooper()), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(stopCommandReceiver, stopFilter, null,
+                    new Handler(stopCommandThread.getLooper()));
+        }
         V2rayCoreManager.getInstance().setUpListener(this);
         delayReceiver = new V2rayDelayReceiver(AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN);
         IntentFilter delayFilter = new IntentFilter(
@@ -347,6 +371,14 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
         if (delayReceiver != null) {
             unregisterReceiver(delayReceiver);
             delayReceiver = null;
+        }
+        if (stopCommandReceiver != null) {
+            unregisterReceiver(stopCommandReceiver);
+            stopCommandReceiver = null;
+        }
+        if (stopCommandThread != null) {
+            stopCommandThread.quitSafely();
+            stopCommandThread = null;
         }
         super.onDestroy();
     }

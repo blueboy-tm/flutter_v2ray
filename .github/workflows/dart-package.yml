@@ -1,0 +1,33 @@
+name: Dart package checks
+
+on:
+  push:
+    branches:
+      - modernization
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/dart-package.yml'
+  pull_request:
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/dart-package.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Analyze Dart package and tests
+        run: flutter analyze lib test
+      - name: Run Dart package tests
+        run: flutter test test/config_builder_test.dart

@@ -75,18 +75,30 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
                 stopSelfResult(startId);
                 return START_NOT_STICKY;
             }
-            if (V2rayCoreManager.getInstance().isV2rayCoreRunning()) {
-                // Android can redeliver START_SERVICE or Flutter can issue a
-                // duplicate request. Never tear down the service while starting.
-                Log.i("VPN_SERVICE", "Core already running; ignoring duplicate start");
-                return START_NOT_STICKY;
-            }
-            if (V2rayCoreManager.getInstance().startCore(v2rayConfig)) {
-                Log.e(V2rayProxyOnlyService.class.getSimpleName(), "onStartCommand success => v2ray core started.");
-            } else {
+            // A foreground service MUST call startForeground() promptly,
+            // before any potentially blocking native Xray initialization.
+            try {
+                V2rayCoreManager.getInstance().showNotification(v2rayConfig);
+            } catch (RuntimeException e) {
+                Log.e("VPN_SERVICE", "Foreground promotion failed", e);
                 stopSelfResult(startId);
                 return START_NOT_STICKY;
             }
+            // Never block the Android main thread in CoreController.startLoop().
+            final V2rayConfig configToStart = v2rayConfig;
+            new Thread(() -> {
+                try {
+                    V2rayCoreManager manager = V2rayCoreManager.getInstance();
+                    if (!manager.isV2rayCoreRunning() &&
+                            !manager.startCore(configToStart)) {
+                        Log.e("VPN_SERVICE", "Native core failed to start");
+                        stopSelf();
+                    }
+                } catch (Exception e) {
+                    Log.e("VPN_SERVICE", "Native core start failed", e);
+                    stopSelf();
+                }
+            }, "V2Ray_CoreStartup").start();
         } else if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.STOP_SERVICE)) {
             V2rayCoreManager.getInstance().stopCore();
             AppConfigs.V2RAY_CONFIG = null;

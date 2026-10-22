@@ -91,20 +91,28 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
 
     @Override
     public void onDestroy() {
-        // stopService() does not deliver STOP_SERVICE. Release the native core
-        // here, but never stop a newer service that replaced this listener.
-        V2rayCoreManager manager = V2rayCoreManager.getInstance();
-        if (manager.v2rayServicesListener == this && manager.isV2rayCoreRunning()) {
-            manager.stopCore();
-        }
         if (delayReceiver != null) {
             unregisterReceiver(delayReceiver);
             delayReceiver = null;
         }
         super.onDestroy();
-        com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(
-                getApplicationContext(),
-                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.DAEMON_PROXY);
+        // Shutdown of Go's native loop can block behind an in-flight delay
+        // request. Keep Android's service main thread responsive.
+        new Thread(() -> {
+            try {
+                V2rayCoreManager manager = V2rayCoreManager.getInstance();
+                if (manager.v2rayServicesListener == V2rayProxyOnlyService.this) {
+                    manager.stopCore();
+                }
+            } catch (Exception e) {
+                Log.e("V2RAY_PROXY_SERVICE", "Native core stop failed", e);
+            } finally {
+                Log.i("V2RAY_PROXY_SERVICE", "Proxy cleanup finished; reporting daemon stopped");
+                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(
+                        getApplicationContext(),
+                        com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.DAEMON_PROXY);
+            }
+        }, "V2Ray_ProxyShutdown").start();
     }
 
     @Nullable

@@ -278,10 +278,10 @@ public final class V2rayCoreManager {
         }
     }
 
-    private String createNotificationChannelID(String appName) {
+    private static String createNotificationChannelID(Service service, String appName) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager notificationManager =
-                    (NotificationManager) v2rayServicesListener.getService().getSystemService(Context.NOTIFICATION_SERVICE);
+                    (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
 
             String channelId = "A_FLUTTER_V2RAY_SERVICE_CH_ID";
             String channelName = appName + " Background Service";
@@ -299,8 +299,7 @@ public final class V2rayCoreManager {
         return "";
     }
 
-    public void showNotification(final V2rayConfig v2rayConfig) {
-        Service context = v2rayServicesListener.getService();
+    public static void showNotification(Service context, final V2rayConfig v2rayConfig) {
         if (context == null) {
             return;
         }
@@ -322,7 +321,7 @@ public final class V2rayCoreManager {
         PendingIntent notificationContentPendingIntent = launchIntent == null ? null :
                 PendingIntent.getActivity(context, 0, launchIntent, flags);
 
-        String notificationChannelID = createNotificationChannelID(v2rayConfig.APPLICATION_NAME);
+        String notificationChannelID = createNotificationChannelID(context, v2rayConfig.APPLICATION_NAME);
 
         // Connection mode is process-local, and may differ in the daemon.
         // The active service is the correct target for its own stop action.

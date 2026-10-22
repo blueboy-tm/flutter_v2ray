@@ -109,27 +109,46 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     private synchronized void stopAllProcess() {
         if (stoppingAllProcesses) return;
         stoppingAllProcesses = true;
-        stopForeground(true);
+        Log.i(TAG, "Stopping VPN: closing TUN and tun2socks before native core");
+
+        // Revoke the actual Android VPN immediately. Calling stopLoop() first
+        // can block for pending native delay requests, leaving the VPN icon and
+        // interface active long after the user pressed Disconnect.
         isRunning = false;
         tunProcessStarted = false;
         if (process != null) {
             process.destroy();
             process = null;
         }
-        V2rayCoreManager.getInstance().stopCore();
-        try {
-            stopSelf();
-        } catch (Exception e) {
-            //ignore
-            Log.e("CANT_STOP", "SELF");
+        if (mInterface != null) {
+            try {
+                mInterface.close();
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to close TUN interface", e);
+            } finally {
+                mInterface = null;
+            }
         }
-        try {
-            if (mInterface != null) mInterface.close();
-        } catch (Exception e) {
-            Log.w(TAG, "Failed to close TUN interface", e);
-        } finally {
-            mInterface = null;
-        }
+        stopForeground(true);
+        stopSelf();
+
+        // Do not block the Android service main thread inside Go stopLoop().
+        // The next session waits for DAEMON_STOPPED after cleanup completes.
+        new Thread(() -> {
+            try {
+                V2rayCoreManager manager = V2rayCoreManager.getInstance();
+                if (manager.v2rayServicesListener == V2rayVPNService.this) {
+                    manager.stopCore();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Native core stop failed", e);
+            } finally {
+                Log.i(TAG, "VPN cleanup finished; reporting daemon stopped");
+                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(
+                        getApplicationContext(),
+                        com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.DAEMON_VPN);
+            }
+        }, "V2Ray_VpnShutdown").start();
     }
 
     private void setup() {
@@ -311,21 +330,13 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
 
     @Override
     public void onDestroy() {
-        // stopService() does not deliver STOP_SERVICE; close TUN, tun2socks and
-        // the native core before the system destroys this foreground service.
-        V2rayCoreManager manager = V2rayCoreManager.getInstance();
-        if (manager.v2rayServicesListener == this &&
-                (isRunning || process != null || mInterface != null || manager.isV2rayCoreRunning())) {
-            stopAllProcess();
-        }
+        // No Go stopLoop() on the Android main thread.
+        stopAllProcess();
         if (delayReceiver != null) {
             unregisterReceiver(delayReceiver);
             delayReceiver = null;
         }
         super.onDestroy();
-        com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.notifyDaemonStopped(
-                getApplicationContext(),
-                com.github.blueboytm.flutter_v2ray.v2ray.V2rayConnectionCoordinator.DAEMON_VPN);
     }
 
     @Override

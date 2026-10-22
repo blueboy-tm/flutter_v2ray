@@ -21,6 +21,36 @@ class V2RayConfigBuilder {
     return V2RayConfigBuilder._(decoded as Map<String, dynamic>);
   }
 
+  /// Compose several share links while retaining the first link's local
+  /// inbound, DNS defaults and direct/blackhole outbounds.
+  ///
+  /// Generated tags are proxy, proxy-2, proxy-3, etc. Supply [tags] to
+  /// override them. Use addBalancer and route to choose among servers.
+  factory V2RayConfigBuilder.fromUrls(
+    Iterable<V2RayURL> urls, {
+    List<String>? tags,
+  }) {
+    final links = urls.toList(growable: false);
+    if (links.isEmpty) {
+      throw ArgumentError('At least one share link is required');
+    }
+    if (tags != null && tags.length != links.length) {
+      throw ArgumentError('tags length must equal urls length');
+    }
+    final builder = V2RayConfigBuilder.fromUrl(links.first);
+    final firstTag = tags == null ? 'proxy' : tags.first;
+    if (firstTag.trim().isEmpty) {
+      throw ArgumentError('Outbound tag cannot be empty');
+    }
+    final first = builder._listSection('outbounds').first as Map;
+    first['tag'] = firstTag;
+    for (var i = 1; i < links.length; i++) {
+      builder.addOutboundFromUrl(links[i],
+          tag: tags == null ? 'proxy-${i + 1}' : tags[i]);
+    }
+    return builder;
+  }
+
   /// Preserve all existing sections in a full Xray JSON configuration.
   factory V2RayConfigBuilder.fromJson(String config) {
     final dynamic value;

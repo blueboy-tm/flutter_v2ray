@@ -152,7 +152,7 @@ abstract class V2RayURL {
       };
       if (headerType == 'http') {
         streamSetting['tcpSettings']['header']['type'] = 'http';
-        if (host != "" || path != "") {
+        if ((host?.isNotEmpty ?? false) || (path?.isNotEmpty ?? false)) {
           streamSetting['tcpSettings']['header']['request'] = {
             "path": path == null ? ["/"] : path.split(","),
             "headers": {
@@ -200,7 +200,7 @@ abstract class V2RayURL {
       };
     } else if (transport == 'ws') {
       streamSetting['wsSettings'] = {
-        "path": path ?? ['/'],
+        "path": path ?? "/",
         "headers": {"Host": host ?? ""},
         "maxEarlyData": null,
         "useBrowserForwarding": null,
@@ -208,13 +208,13 @@ abstract class V2RayURL {
       };
       sni = streamSetting['wsSettings']['headers']['Host'];
     } else if (transport == 'h2' || transport == 'http') {
-      streamSetting['network'] = 'h2';
-      streamSetting['h2Setting'] = {
-        "host": host?.split(",") ?? "",
+      streamSetting['network'] = 'http';
+      streamSetting['httpSettings'] = {
+        "host": host?.split(",") ?? <String>[],
         "path": path ?? ['/'],
       };
-      sni = streamSetting['h2Setting']['host'].length > 0
-          ? streamSetting['h2Setting']['host'][0]
+      sni = streamSetting['httpSettings']['host'].length > 0
+          ? streamSetting['httpSettings']['host'][0]
           : sni;
     } else if (transport == 'quic') {
       streamSetting['quicSettings'] = {
@@ -250,31 +250,31 @@ abstract class V2RayURL {
     required String? shortId,
     required String? spiderX,
   }) {
-    streamSetting['security'] = streamSecurity;
-    Map<String, dynamic> tlsSetting = {
-      // Xray v26 removed allowInsecure=true. Do not emit the legacy field;
-      // normal TLS verification remains enabled by default.
-      "serverName": sni,
-      "alpn": alpns == '' ? null : alpns?.split(','),
-      "minVersion": null,
-      "maxVersion": null,
-      "preferServerCipherSuites": null,
-      "cipherSuites": null,
-      "fingerprint": fingerprint,
-      "certificates": null,
-      "disableSystemRoot": null,
-      "enableSessionResumption": null,
-      "show": false,
-      "publicKey": publicKey,
-      "shortId": shortId,
-      "spiderX": spiderX,
-    };
+    // Xray TLS and REALITY have different schemas. Emit only the fields
+    // understood by the selected transport and never weaken verification.
+    streamSetting['security'] = streamSecurity ?? '';
+    streamSetting['tlsSettings'] = null;
+    streamSetting['realitySettings'] = null;
+
+    final String? serverName = (sni?.isNotEmpty ?? false) ? sni : null;
+    final String? clientFingerprint =
+        (fingerprint?.isNotEmpty ?? false) ? fingerprint : null;
     if (streamSecurity == 'tls') {
-      streamSetting['realitySettings'] = null;
-      streamSetting['tlsSettings'] = tlsSetting;
+      streamSetting['tlsSettings'] = {
+        'serverName': serverName,
+        'alpn': (alpns?.isNotEmpty ?? false) ? alpns!.split(',') : null,
+        'fingerprint': clientFingerprint,
+      };
     } else if (streamSecurity == 'reality') {
-      streamSetting['tlsSettings'] = null;
-      streamSetting['realitySettings'] = tlsSetting;
+      streamSetting['realitySettings'] = {
+        'serverName': serverName,
+        'fingerprint': clientFingerprint ?? 'chrome',
+        // In recent Xray this client-side field is named password, not
+        // publicKey. Keep the pbk share-link parameter at the parser boundary.
+        'password': publicKey,
+        'shortId': shortId,
+        'spiderX': spiderX,
+      };
     }
   }
 

@@ -74,8 +74,9 @@ class ShadowSocksURL extends V2RayURL {
   }
 
   late final Uri uri;
-  late final String method;
-  late final String password;
+  // Keep these fields mutable for existing parser customization callers.
+  String method = 'none';
+  String password = '';
 
   @override
   String get address => uri.host;

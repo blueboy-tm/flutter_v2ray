@@ -11,6 +11,7 @@ import 'package:flutter_v2ray/url/vmess.dart';
 import 'flutter_v2ray_platform_interface.dart';
 import 'model/v2ray_status.dart';
 
+export 'config/v2ray_config_builder.dart';
 export 'model/v2ray_status.dart';
 export 'url/url.dart';
 
@@ -25,7 +26,7 @@ class FlutterV2ray {
     if (Platform.isAndroid) {
       return await FlutterV2rayPlatform.instance.requestPermission();
     }
-    return true;
+    throw UnsupportedError('flutter_v2ray VPN permission is only supported on Android');
   }
 
   /// You must initialize V2Ray before using it.
@@ -77,13 +78,7 @@ class FlutterV2ray {
     bool proxyOnly = false,
     String notificationDisconnectButtonName = "DISCONNECT",
   }) async {
-    try {
-      if (jsonDecode(config) == null) {
-        throw ArgumentError('The provided string is not valid JSON');
-      }
-    } catch (_) {
-      throw ArgumentError('The provided string is not valid JSON');
-    }
+    _validateXrayJson(config);
 
     await FlutterV2rayPlatform.instance.startV2Ray(
       remark: remark,
@@ -104,13 +99,7 @@ class FlutterV2ray {
   Future<int> getServerDelay(
       {required String config,
       String url = 'https://google.com/generate_204'}) async {
-    try {
-      if (jsonDecode(config) == null) {
-        throw ArgumentError('The provided string is not valid JSON');
-      }
-    } catch (_) {
-      throw ArgumentError('The provided string is not valid JSON');
-    }
+    _validateXrayJson(config);
     return await FlutterV2rayPlatform.instance
         .getServerDelay(config: config, url: url);
   }
@@ -124,6 +113,19 @@ class FlutterV2ray {
   // This method returns the V2Ray Core version.
   Future<String> getCoreVersion() async {
     return await FlutterV2rayPlatform.instance.getCoreVersion();
+  }
+
+  /// Perform lightweight validation without trying to duplicate Xray's schema.
+  static void _validateXrayJson(String config) {
+    final dynamic value;
+    try {
+      value = jsonDecode(config);
+    } on FormatException {
+      throw ArgumentError('The provided string is not valid JSON');
+    }
+    if (value is! Map<String, dynamic>) {
+      throw ArgumentError('Xray configuration must be a JSON object');
+    }
   }
 
   /// parse V2RayURL object from V2Ray share link

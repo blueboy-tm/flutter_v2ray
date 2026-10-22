@@ -22,9 +22,14 @@
 
 
 ## Change logs
+
+> **Development branch:** `modernization` includes a newer Android Xray core
+> (`v26.10.17`) and a new Dart multi-outbound config builder. These changes
+> are not yet part of the published `1.0.10` package.
+
 ### 1.0.10
 
-* update xray core version to 25.3.6
+* published Xray core version: 25.3.6
 
 #### [see more](./CHANGELOG.md)
 
@@ -32,6 +37,7 @@
 - Run V2Ray Proxy & VPN Mode
 - Get Server Delay
 - Parsing V2Ray sharing links and making changes to them
+- Composing several Xray outbounds, balancers, DNS and routing settings with the [Dart configuration builder](./doc/config_builder.md) (`modernization` branch)
 
 <br>
 
@@ -39,9 +45,9 @@
 
 | Platform  | Status    | Info |
 | --------- | --------- | ---- |
-| Android   | Done ✅   | Xray 25.3.6 |
-| IOS       | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy_tm) |
-| Desktop   | Done ✅   | For purchase: [t.me/blueboy_tm](https://t.me/blueboy_tm) |
+| Android   | Implemented ✅ | Xray v26.10.17 in `modernization` |
+| iOS       | Not implemented | Existing Swift code is a registration stub |
+| Desktop   | Not implemented | No desktop plugin implementation in this repository |
 
 <br>
 
@@ -82,6 +88,13 @@ print(parser.remark);
 // generate full v2ray configuration (json)
 print(parser.getFullConfiguration());
 ```
+### Multiple outbounds and routing (modernization)
+
+See the [configuration builder guide](./doc/config_builder.md) for examples
+of composing multiple VLESS/VMess/Trojan/etc. outbounds, routing rules,
+round-robin and least-load balancers, and custom DNS or Xray sections.
+The original URL parser and `getFullConfiguration()` API remain available.
+
 ### Edit Configuration
 ``` dart
 // Change v2ray listening port

@@ -185,9 +185,15 @@ public final class V2rayCoreManager {
                 return false;
             }
             V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_CONNECTED;
-            makeDurationTimer(v2rayServicesListener.getService().getApplicationContext(),
-                    v2rayConfig.ENABLE_TRAFFIC_STATICS);
-            showNotification(v2rayConfig);
+            final Context timerContext = v2rayServicesListener.getService().getApplicationContext();
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                if (isV2rayCoreRunning() &&
+                        V2RAY_STATE == AppConfigs.V2RAY_STATES.V2RAY_CONNECTED) {
+                    makeDurationTimer(timerContext, v2rayConfig.ENABLE_TRAFFIC_STATICS);
+                }
+            });
+            // The service already called startForeground() before entering
+            // the blocking native startLoop; do not delay promotion until here.
         } catch (Exception e) {
             Log.e(V2rayCoreManager.class.getSimpleName(), "startCore failed =>", e);
             return false;

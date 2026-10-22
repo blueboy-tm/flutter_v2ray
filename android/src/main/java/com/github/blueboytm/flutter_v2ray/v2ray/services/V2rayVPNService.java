@@ -65,7 +65,6 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             registerReceiver(stopCommandReceiver, stopFilter, null,
                     new Handler(stopCommandThread.getLooper()));
         }
-        V2rayCoreManager.getInstance().setUpListener(this);
         delayReceiver = new V2rayDelayReceiver(AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN);
         IntentFilter delayFilter = new IntentFilter(
                 com.github.blueboytm.flutter_v2ray.v2ray.V2rayController.ACTION_DELAY_REQUEST);
@@ -102,7 +101,7 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             // A foreground service MUST call startForeground() promptly,
             // before any potentially blocking native Xray initialization.
             try {
-                V2rayCoreManager.getInstance().showNotification(v2rayConfig);
+                V2rayCoreManager.showNotification(this, v2rayConfig);
             } catch (RuntimeException e) {
                 Log.e("VPN_SERVICE", "Foreground promotion failed", e);
                 stopSelfResult(startId);
@@ -113,6 +112,7 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             new Thread(() -> {
                 try {
                     V2rayCoreManager manager = V2rayCoreManager.getInstance();
+                    manager.setUpListener(V2rayVPNService.this);
                     if (!manager.isV2rayCoreRunning() &&
                             !manager.startCore(configToStart)) {
                         Log.e("VPN_SERVICE", "Native core failed to start");

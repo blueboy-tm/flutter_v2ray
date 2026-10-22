@@ -211,7 +211,7 @@ abstract class V2RayURL {
       streamSetting['network'] = 'http';
       streamSetting['httpSettings'] = {
         "host": host?.split(",") ?? <String>[],
-        "path": path ?? ['/'],
+        "path": path ?? "/",
       };
       sni = streamSetting['httpSettings']['host'].length > 0
           ? streamSetting['httpSettings']['host'][0]

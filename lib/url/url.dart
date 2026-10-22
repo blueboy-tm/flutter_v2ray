@@ -4,7 +4,9 @@ abstract class V2RayURL {
   V2RayURL({required this.url});
   final String url;
 
-  bool get allowInsecure => true;
+  // Legacy compatibility getter; generated Xray configs always enforce TLS
+  // verification unless an explicit supported certificate pin is supplied.
+  bool get allowInsecure => false;
   String get security => "auto";
   int get level => 8;
   int get port => 443;
@@ -250,7 +252,8 @@ abstract class V2RayURL {
   }) {
     streamSetting['security'] = streamSecurity;
     Map<String, dynamic> tlsSetting = {
-      "allowInsecure": allowInsecure,
+      // Xray v26 removed allowInsecure=true. Do not emit the legacy field;
+      // normal TLS verification remains enabled by default.
       "serverName": sni,
       "alpn": alpns == '' ? null : alpns?.split(','),
       "minVersion": null,

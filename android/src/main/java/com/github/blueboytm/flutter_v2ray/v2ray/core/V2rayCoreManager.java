@@ -66,6 +66,14 @@ public final class V2rayCoreManager {
     public AppConfigs.V2RAY_STATES V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_DISCONNECTED;
     private boolean isLibV2rayCoreInitialized = false;
     private CountDownTimer countDownTimer;
+    private final java.util.concurrent.ExecutorService trafficExecutor =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "V2Ray_TrafficQuery");
+                t.setDaemon(true);
+                return t;
+            });
+    private final java.util.concurrent.atomic.AtomicBoolean trafficQueryRunning =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
     private int seconds, minutes, hours;
     private long totalDownload, totalUpload, uploadSpeed, downloadSpeed;
     private String SERVICE_DURATION = "00:00:00";
@@ -97,29 +105,36 @@ public final class V2rayCoreManager {
                 if (hours == 23) {
                     hours = 0;
                 }
-                if (enable_traffic_statics) {
-                    // The new binding returns a delimited batch of reset-on-read counters.
-                    downloadSpeed = 0;
-                    uploadSpeed = 0;
-                    String counters = coreController.queryAllOutboundTrafficStats();
-                    if (counters != null && !counters.isEmpty()) {
-                        for (String entry : counters.split(";")) {
-                            String[] fields = entry.split(",", 3);
-                            if (fields.length != 3) continue;
-                            try {
-                                long bytes = Long.parseLong(fields[2]);
-                                if ("downlink".equals(fields[1])) {
-                                    downloadSpeed += bytes;
-                                } else if ("uplink".equals(fields[1])) {
-                                    uploadSpeed += bytes;
+                if (enable_traffic_statics && trafficQueryRunning.compareAndSet(false, true)) {
+                    // Go traffic statistics can block while the core holds its
+                    // mutex. Never query JNI on Android's service main Looper.
+                    trafficExecutor.execute(() -> {
+                        try {
+                            String counters = coreController.queryAllOutboundTrafficStats();
+                            long down = 0L;
+                            long up = 0L;
+                            if (counters != null && !counters.isEmpty()) {
+                                for (String entry : counters.split(";")) {
+                                    String[] fields = entry.split(",", 3);
+                                    if (fields.length != 3) continue;
+                                    try {
+                                        long bytes = Long.parseLong(fields[2]);
+                                        if ("downlink".equals(fields[1])) down += bytes;
+                                        else if ("uplink".equals(fields[1])) up += bytes;
+                                    } catch (NumberFormatException ignored) {
+                                    }
                                 }
-                            } catch (NumberFormatException ignored) {
-                                // Ignore malformed counters from the native bridge.
                             }
+                            downloadSpeed = down;
+                            uploadSpeed = up;
+                            totalDownload += down;
+                            totalUpload += up;
+                        } catch (Exception e) {
+                            Log.w("V2RAY_CORE", "Traffic stats query failed", e);
+                        } finally {
+                            trafficQueryRunning.set(false);
                         }
-                    }
-                    totalDownload += downloadSpeed;
-                    totalUpload += uploadSpeed;
+                    });
                 }
                 SERVICE_DURATION = Utilities.convertIntToTwoDigit(hours) + ":" + Utilities.convertIntToTwoDigit(minutes) + ":" + Utilities.convertIntToTwoDigit(seconds);
                 Intent connection_info_intent = new Intent("V2RAY_CONNECTION_INFO");
@@ -139,7 +154,7 @@ public final class V2rayCoreManager {
 
             public void onFinish() {
                 countDownTimer.cancel();
-                if (V2rayCoreManager.getInstance().isV2rayCoreRunning())
+                if (V2RAY_STATE == AppConfigs.V2RAY_STATES.V2RAY_CONNECTED)
                     makeDurationTimer(context, enable_traffic_statics);
             }
         }.start();

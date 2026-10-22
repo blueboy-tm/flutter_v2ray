@@ -7,20 +7,21 @@ class ShadowSocksURL extends V2RayURL {
     if (!url.startsWith('ss://')) {
       throw ArgumentError('url is invalid');
     }
-    Uri? parsed = Uri.tryParse(url);
-    if (parsed == null) throw ArgumentError('url is invalid');
-
     // SIP002: ss://base64(method:password)@host:port and
     //          ss://method:password@host:port.
     // Legacy: ss://base64(method:password@host:port).
-    if (!url.substring(5).split('#').first.split('?').first.contains('@')) {
-      final raw = url.substring(5).split('#').first.split('?').first;
+    final authority = url.substring(5).split('#').first.split('?').first;
+    Uri? parsed;
+    if (!authority.contains('@')) {
       try {
-        final decoded = utf8.decode(base64Decode(base64.normalize(raw)));
+        final decoded =
+            utf8.decode(base64Decode(base64.normalize(authority)));
         parsed = Uri.tryParse('ss://$decoded');
       } catch (_) {
         throw ArgumentError('url is invalid');
       }
+    } else {
+      parsed = Uri.tryParse(url);
     }
     if (parsed == null || parsed.host.isEmpty) {
       throw ArgumentError('url is invalid');

@@ -126,6 +126,24 @@ void main() {
         'alice');
   });
 
+  test('one call builds from a list of outbound links', () {
+    final builder = V2RayConfigBuilder.fromUrls([
+      FlutterV2ray.parseFromURL(firstLink),
+      FlutterV2ray.parseFromURL(secondLink),
+    ], tags: ['server-a', 'server-b']);
+    final tags = builder.outboundTags;
+    expect(tags, containsAll(['server-a', 'server-b', 'direct']));
+  });
+
+  test('legacy full-payload Shadowsocks Base64 links parse', () {
+    final source = 'aes-128-gcm:pass@legacy.example:8388';
+    final share = 'ss://${base64Url.encode(utf8.encode(source))}';
+    final parsed = FlutterV2ray.parseFromURL(share);
+    expect(parsed.address, 'legacy.example');
+    expect(parsed.outbound1['settings']['servers'][0]['method'],
+        'aes-128-gcm');
+  });
+
   test('VMess parser accepts Base64URL share links', () {
     final raw = jsonEncode({
       'add': 'vmess.example',

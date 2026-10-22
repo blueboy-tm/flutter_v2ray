@@ -13,7 +13,7 @@ class ShadowSocksURL extends V2RayURL {
     // SIP002: ss://base64(method:password)@host:port and
     //          ss://method:password@host:port.
     // Legacy: ss://base64(method:password@host:port).
-    if (parsed.host.isEmpty) {
+    if (!url.substring(5).split('#').first.split('?').first.contains('@')) {
       final raw = url.substring(5).split('#').first.split('?').first;
       try {
         final decoded = utf8.decode(base64Decode(base64.normalize(raw)));

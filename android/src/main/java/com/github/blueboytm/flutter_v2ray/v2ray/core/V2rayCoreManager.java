@@ -337,7 +337,7 @@ public final class V2rayCoreManager {
                 .setSmallIcon(v2rayConfig.APPLICATION_ICON)
                 .setContentTitle(v2rayConfig.REMARK)
                 .addAction(0, v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME, pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setShowWhen(false)
                 .setOnlyAlertOnce(true)
                 .setOngoing(true);

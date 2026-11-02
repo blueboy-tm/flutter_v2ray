@@ -7,6 +7,7 @@ on:
     paths:
       - 'lib/**'
       - 'test/**'
+      - 'tool/**'
       - 'pubspec.yaml'
       - '.github/workflows/dart-package.yml'
   pull_request:
@@ -28,6 +29,16 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Analyze Dart package and tests
-        run: flutter analyze lib test
+        run: flutter analyze lib test tool
       - name: Run Dart package tests
         run: flutter test test/config_builder_test.dart
+      - name: Generate smoke configs from synthetic test links
+        run: |
+          printf '%s\n' \
+            'vless://11111111-1111-4111-8111-111111111111@first.example:443?security=tls&type=ws&sni=first.example' \
+            'vless://22222222-2222-4222-8222-222222222222@second.example:443?security=tls&type=ws&sni=second.example' \
+            > /tmp/multi-outbound-nodes.txt
+          dart run tool/multi_outbound_smoke.dart /tmp/multi-outbound-nodes.txt
+          test -s build/multi_outbound_smoke/server-a.json
+          test -s build/multi_outbound_smoke/server-b.json
+          test -s build/multi_outbound_smoke/round-robin.json

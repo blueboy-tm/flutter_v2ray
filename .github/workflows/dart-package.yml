@@ -1,0 +1,90 @@
+name: Release readiness checks
+
+on:
+  push:
+    branches:
+      - modernization
+      - master
+  pull_request:
+    branches:
+      - master
+      - modernization
+  workflow_dispatch:
+
+jobs:
+  dart:
+    name: Dart analysis and parser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Analyze public API, parsers and tools
+        run: flutter analyze lib test tool
+      - name: Run config builder tests
+        run: flutter test test/config_builder_test.dart
+      - name: Generate smoke configs from synthetic test links
+        run: |
+          printf '%s\n' \
+            'vless://11111111-1111-4111-8111-111111111111@first.example:443?security=tls&type=ws&sni=first.example' \
+            'vless://22222222-2222-4222-8222-222222222222@second.example:443?security=tls&type=ws&sni=second.example' \
+            > /tmp/multi-outbound-nodes.txt
+          dart run tool/multi_outbound_smoke.dart /tmp/multi-outbound-nodes.txt
+          test -s build/multi_outbound_smoke/server-a.json
+          test -s build/multi_outbound_smoke/server-b.json
+          test -s build/multi_outbound_smoke/round-robin.json
+
+  android:
+    name: Android example debug APK build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      # GitHub-hosted Ubuntu runners already include Android command-line
+      # tools; setup-android@v3 tries to install obsolete SDK package "tools"
+      # on the current runner image and fails before the build can start.
+      - name: Install Android SDK platform
+        run: |
+          SDK_MANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -n "$SDK_MANAGER"
+          yes | "$SDK_MANAGER" --licenses > /dev/null
+          "$SDK_MANAGER" --install "platforms;android-36" "build-tools;36.0.0"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve example dependencies
+        working-directory: example
+        run: flutter pub get
+      - name: Build example with bundled Xray and tun2socks
+        working-directory: example
+        run: flutter build apk --debug
+      - name: Verify generated APK exists
+        run: test -s example/build/app/outputs/flutter-apk/app-debug.apk
+
+  package:
+    name: Pub package dry run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Restore dependency-resolution changes in CI checkout
+        run: |
+          # Flutter SDK and pub resolution can rewrite checked-in lint files
+          # and the example lockfile. Pub requires a clean tracked tree.
+          git restore -- .
+          git diff --exit-code
+      - name: Verify publishable package without uploading it
+        run: dart pub publish --dry-run

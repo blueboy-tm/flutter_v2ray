@@ -7,18 +7,28 @@ class SocksURL extends V2RayURL {
     if (!url.startsWith('socks://')) {
       throw ArgumentError('url is invalid');
     }
-    final temp = Uri.tryParse(url);
-    if (temp == null) {
+    final parsed = Uri.tryParse(url);
+    if (parsed == null || parsed.host.isEmpty) {
       throw ArgumentError('url is invalid');
     }
-    uri = temp;
-    if (uri.userInfo.isNotEmpty) {
-      final String userpass = utf8.decode(base64Decode(uri.userInfo));
-      username = userpass.split(':')[0];
-      password = userpass.substring(username!.length + 1);
-    } else {
+    uri = parsed;
+    var credentials = uri.userInfo;
+    if (credentials.isEmpty) {
       username = null;
       password = null;
+    } else {
+      if (!credentials.contains(':')) {
+        try {
+          credentials =
+              utf8.decode(base64Decode(base64.normalize(credentials)));
+        } catch (_) {
+          throw ArgumentError('Invalid SOCKS credentials');
+        }
+      }
+      final splitAt = credentials.indexOf(':');
+      if (splitAt < 0) throw ArgumentError('Invalid SOCKS credentials');
+      username = Uri.decodeComponent(credentials.substring(0, splitAt));
+      password = Uri.decodeComponent(credentials.substring(splitAt + 1));
     }
   }
 
@@ -37,24 +47,21 @@ class SocksURL extends V2RayURL {
 
   @override
   Map<String, dynamic> get outbound1 => {
-        "protocol": "socks",
-        "settings": {
-          "servers": [
+        'tag': 'proxy',
+        'protocol': 'socks',
+        'settings': {
+          'servers': [
             {
-              "address": address,
-              "level": level,
-              "method": "chacha20-poly1305",
-              "ota": false,
-              "password": "",
-              "port": port,
-              "users": [
-                {"level": level, "user": username, "pass": password}
-              ]
+              'address': address,
+              'port': port,
+              if (username != null)
+                'users': [
+                  {'user': username, 'pass': password, 'level': level}
+                ],
             }
-          ]
+          ],
         },
-        "streamSettings": streamSetting,
-        "tag": "proxy",
-        "mux": {"concurrency": 8, "enabled": false},
+        'streamSettings': streamSetting,
+        'mux': {'enabled': false, 'concurrency': 8},
       };
 }

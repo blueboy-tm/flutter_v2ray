@@ -102,14 +102,22 @@ public class Utilities {
                         .getJSONArray("vnext").getJSONObject(0)
                         .getString("port");
             } catch (Exception e) {
-                v2rayConfig.CONNECTED_V2RAY_SERVER_ADDRESS = config_json.getJSONArray("outbounds")
-                        .getJSONObject(0).getJSONObject("settings")
-                        .getJSONArray("servers").getJSONObject(0)
-                        .getString("address");
-                v2rayConfig.CONNECTED_V2RAY_SERVER_PORT = config_json.getJSONArray("outbounds")
-                        .getJSONObject(0).getJSONObject("settings")
-                        .getJSONArray("servers").getJSONObject(0)
-                        .getString("port");
+                // VLESS/VMess use vnext, while Trojan/Shadowsocks can use servers.
+                // Freedom/blackhole outbounds have no remote endpoint at all.
+                try {
+                    JSONObject firstOutbound = config_json.getJSONArray("outbounds").getJSONObject(0);
+                    JSONObject settings = firstOutbound.optJSONObject("settings");
+                    if (settings != null) {
+                        JSONArray servers = settings.optJSONArray("servers");
+                        if (servers != null && servers.length() > 0) {
+                            JSONObject server = servers.getJSONObject(0);
+                            v2rayConfig.CONNECTED_V2RAY_SERVER_ADDRESS = server.optString("address", "");
+                            v2rayConfig.CONNECTED_V2RAY_SERVER_PORT = server.optString("port", "");
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Endpoint metadata is optional; Xray validates the actual JSON.
+                }
             }
             try {
                 if (config_json.has("policy")) {

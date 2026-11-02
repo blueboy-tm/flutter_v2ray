@@ -7,35 +7,39 @@ class VmessURL extends V2RayURL {
     if (!url.startsWith('vmess://')) {
       throw ArgumentError('url is invalid');
     }
-    String raw = url.substring(8);
-    if (raw.length % 4 > 0) {
-      raw += "=" * (4 - raw.length % 4);
-    }
+    var raw = url.substring(8).trim();
     try {
-      rawConfig = jsonDecode(utf8.decode(base64Decode(raw)));
+      raw = base64.normalize(raw);
+      final decoded = jsonDecode(utf8.decode(base64Decode(raw)));
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('VMess payload is not an object');
+      }
+      rawConfig = decoded;
     } catch (_) {
       throw ArgumentError('url is invalid');
     }
     var sni = super.populateTransportSettings(
-      transport: rawConfig['net'],
-      headerType: rawConfig['type'],
-      host: rawConfig['host'],
-      path: rawConfig['path'],
-      seed: rawConfig['path'],
-      quicSecurity: rawConfig['host'],
-      key: rawConfig['path'],
-      mode: rawConfig['type'],
-      serviceName: rawConfig['path'],
+      transport: rawConfig['net']?.toString() ?? 'tcp',
+      headerType: rawConfig['type']?.toString(),
+      host: rawConfig['host']?.toString(),
+      path: rawConfig['path']?.toString(),
+      seed: rawConfig['path']?.toString(),
+      quicSecurity: rawConfig['host']?.toString(),
+      key: rawConfig['path']?.toString(),
+      mode: rawConfig['type']?.toString(),
+      serviceName: rawConfig['path']?.toString(),
     );
     String? fingerprint = (rawConfig['fp'] != null && rawConfig['fp'] != '')
-        ? rawConfig['fp']
+        ? rawConfig['fp'].toString()
         : streamSetting['tlsSettings']?['fingerprint'];
     super.populateTlsSettings(
-      streamSecurity: rawConfig['tls'],
+      streamSecurity: rawConfig['tls']?.toString(),
       allowInsecure: allowInsecure,
-      sni: sni,
+      sni: rawConfig['sni']?.toString().isNotEmpty == true
+          ? rawConfig['sni'].toString()
+          : sni,
       fingerprint: fingerprint,
-      alpns: rawConfig['alpn'],
+      alpns: rawConfig['alpn']?.toString(),
       publicKey: null,
       shortId: null,
       spiderX: null,
@@ -44,10 +48,10 @@ class VmessURL extends V2RayURL {
   late final Map<String, dynamic> rawConfig;
 
   @override
-  String get remark => rawConfig['ps'];
+  String get remark => rawConfig['ps']?.toString() ?? '';
 
   @override
-  String get address => rawConfig['add'] ?? '';
+  String get address => rawConfig['add']?.toString() ?? '';
 
   @override
   int get port => int.tryParse(rawConfig['port'].toString()) ?? super.port;
@@ -65,9 +69,9 @@ class VmessURL extends V2RayURL {
                 {
                   "id": rawConfig['id'] ?? '',
                   "alterId": int.tryParse(rawConfig['aid'].toString()) ?? 0,
-                  "security": (rawConfig['scy']?.isEmpty ?? true)
+                  "security": (rawConfig['scy']?.toString().isEmpty ?? true)
                       ? security
-                      : rawConfig['scy'],
+                      : rawConfig['scy'].toString(),
                   "level": level,
                   "encryption": "",
                   "flow": ""

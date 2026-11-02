@@ -1,7 +1,7 @@
 name: flutter_v2ray
-description: A plugin that allow you to making v2ray connection (VPN Mode & Proxy Only)
+description: Flutter plugin for Android Xray VPN and proxy connections, share-link parsing, and configurable multi-outbound routing.
 
-version: 1.0.10
+version: 2.0.0
 homepage: https://github.com/blueboy-tm/flutter_v2ray/
 
 environment:
@@ -37,8 +37,6 @@ flutter:
     platforms:
       android:
         package: com.github.blueboytm.flutter_v2ray
-        pluginClass: FlutterV2rayPlugin
-      ios:
         pluginClass: FlutterV2rayPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

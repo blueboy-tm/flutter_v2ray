@@ -1,18 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_v2ray/url/shadowsocks.dart';
-import 'package:flutter_v2ray/url/socks.dart';
-import 'package:flutter_v2ray/url/trojan.dart';
-import 'package:flutter_v2ray/url/url.dart';
-import 'package:flutter_v2ray/url/vless.dart';
-import 'package:flutter_v2ray/url/vmess.dart';
+import 'url/parser.dart';
+import 'url/url.dart';
 
 import 'flutter_v2ray_platform_interface.dart';
 import 'model/v2ray_status.dart';
 
+export 'config/v2ray_config_builder.dart';
 export 'model/v2ray_status.dart';
 export 'url/url.dart';
+export 'url/parser.dart' show parseV2RayURL;
 
 class FlutterV2ray {
   FlutterV2ray({required this.onStatusChanged});
@@ -25,7 +23,7 @@ class FlutterV2ray {
     if (Platform.isAndroid) {
       return await FlutterV2rayPlatform.instance.requestPermission();
     }
-    return true;
+    throw UnsupportedError('flutter_v2ray VPN permission is only supported on Android');
   }
 
   /// You must initialize V2Ray before using it.
@@ -77,13 +75,7 @@ class FlutterV2ray {
     bool proxyOnly = false,
     String notificationDisconnectButtonName = "DISCONNECT",
   }) async {
-    try {
-      if (jsonDecode(config) == null) {
-        throw ArgumentError('The provided string is not valid JSON');
-      }
-    } catch (_) {
-      throw ArgumentError('The provided string is not valid JSON');
-    }
+    _validateXrayJson(config);
 
     await FlutterV2rayPlatform.instance.startV2Ray(
       remark: remark,
@@ -104,13 +96,7 @@ class FlutterV2ray {
   Future<int> getServerDelay(
       {required String config,
       String url = 'https://google.com/generate_204'}) async {
-    try {
-      if (jsonDecode(config) == null) {
-        throw ArgumentError('The provided string is not valid JSON');
-      }
-    } catch (_) {
-      throw ArgumentError('The provided string is not valid JSON');
-    }
+    _validateXrayJson(config);
     return await FlutterV2rayPlatform.instance
         .getServerDelay(config: config, url: url);
   }
@@ -126,23 +112,21 @@ class FlutterV2ray {
     return await FlutterV2rayPlatform.instance.getCoreVersion();
   }
 
+  /// Perform lightweight validation without trying to duplicate Xray's schema.
+  static void _validateXrayJson(String config) {
+    final dynamic value;
+    try {
+      value = jsonDecode(config);
+    } on FormatException {
+      throw ArgumentError('The provided string is not valid JSON');
+    }
+    if (value is! Map<String, dynamic>) {
+      throw ArgumentError('Xray configuration must be a JSON object');
+    }
+  }
+
   /// parse V2RayURL object from V2Ray share link
   ///
   /// like vmess://, vless://, trojan://, ss://, socks://
-  static V2RayURL parseFromURL(String url) {
-    switch (url.split("://")[0].toLowerCase()) {
-      case 'vmess':
-        return VmessURL(url: url);
-      case 'vless':
-        return VlessURL(url: url);
-      case 'trojan':
-        return TrojanURL(url: url);
-      case 'ss':
-        return ShadowSocksURL(url: url);
-      case 'socks':
-        return SocksURL(url: url);
-      default:
-        throw ArgumentError('url is invalid');
-    }
-  }
+  static V2RayURL parseFromURL(String url) => parseV2RayURL(url);
 }

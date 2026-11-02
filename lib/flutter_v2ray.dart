@@ -1,12 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_v2ray/url/shadowsocks.dart';
-import 'package:flutter_v2ray/url/socks.dart';
-import 'package:flutter_v2ray/url/trojan.dart';
-import 'package:flutter_v2ray/url/url.dart';
-import 'package:flutter_v2ray/url/vless.dart';
-import 'package:flutter_v2ray/url/vmess.dart';
+import 'url/parser.dart';
+import 'url/url.dart';
 
 import 'flutter_v2ray_platform_interface.dart';
 import 'model/v2ray_status.dart';
@@ -14,6 +10,7 @@ import 'model/v2ray_status.dart';
 export 'config/v2ray_config_builder.dart';
 export 'model/v2ray_status.dart';
 export 'url/url.dart';
+export 'url/parser.dart' show parseV2RayURL;
 
 class FlutterV2ray {
   FlutterV2ray({required this.onStatusChanged});
@@ -131,20 +128,5 @@ class FlutterV2ray {
   /// parse V2RayURL object from V2Ray share link
   ///
   /// like vmess://, vless://, trojan://, ss://, socks://
-  static V2RayURL parseFromURL(String url) {
-    switch (url.split("://")[0].toLowerCase()) {
-      case 'vmess':
-        return VmessURL(url: url);
-      case 'vless':
-        return VlessURL(url: url);
-      case 'trojan':
-        return TrojanURL(url: url);
-      case 'ss':
-        return ShadowSocksURL(url: url);
-      case 'socks':
-        return SocksURL(url: url);
-      default:
-        throw ArgumentError('url is invalid');
-    }
-  }
+  static V2RayURL parseFromURL(String url) => parseV2RayURL(url);
 }

@@ -1,24 +1,19 @@
-name: Dart package checks
+name: Release readiness checks
 
 on:
   push:
     branches:
       - modernization
-    paths:
-      - 'lib/**'
-      - 'test/**'
-      - 'tool/**'
-      - 'pubspec.yaml'
-      - '.github/workflows/dart-package.yml'
+      - master
   pull_request:
-    paths:
-      - 'lib/**'
-      - 'test/**'
-      - 'pubspec.yaml'
-      - '.github/workflows/dart-package.yml'
+    branches:
+      - master
+      - modernization
+  workflow_dispatch:
 
 jobs:
-  test:
+  dart:
+    name: Dart analysis and parser tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,9 +23,9 @@ jobs:
           cache: true
       - name: Resolve dependencies
         run: flutter pub get
-      - name: Analyze Dart package and tests
+      - name: Analyze public API, parsers and tools
         run: flutter analyze lib test tool
-      - name: Run Dart package tests
+      - name: Run config builder tests
         run: flutter test test/config_builder_test.dart
       - name: Generate smoke configs from synthetic test links
         run: |
@@ -42,3 +37,42 @@ jobs:
           test -s build/multi_outbound_smoke/server-a.json
           test -s build/multi_outbound_smoke/server-b.json
           test -s build/multi_outbound_smoke/round-robin.json
+
+  android:
+    name: Android example debug APK build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK platform
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve example dependencies
+        working-directory: example
+        run: flutter pub get
+      - name: Build example with bundled Xray and tun2socks
+        working-directory: example
+        run: flutter build apk --debug
+      - name: Verify generated APK exists
+        run: test -s example/build/app/outputs/flutter-apk/app-debug.apk
+
+  package:
+    name: Pub package dry run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Verify publishable package without uploading it
+        run: flutter pub publish --dry-run

@@ -24,13 +24,20 @@
 
 ## Change logs
 
-> **Development branch:** `modernization` includes a newer Android Xray core
-> (`v26.10.17`) and a new Dart multi-outbound config builder. These changes
-> are not yet part of the published `1.0.10` package.
+> **Release candidate:** The `modernization` branch contains the upcoming
+> `2.0.0` release with Android Xray `v26.10.17`. Until `2.0.0` is published
+> to pub.dev, `flutter pub add flutter_v2ray` installs the **published**
+> version, which may not include the new APIs below.
+
+### 2.0.0 (unreleased)
+
+- Updated Android Xray binding and Android service lifecycle.
+- Added multi-outbound builder, routing, balancers and parser fixes.
+- Declared Android-only support; see [migration notes](./CHANGELOG.md).
 
 ### 1.0.10
 
-* published Xray core version: 25.3.6
+- Published Xray core version: 25.3.6
 
 #### [see more](./CHANGELOG.md)
 
@@ -343,54 +350,83 @@ flutterV2ray.startV2Ray(
 <br>
 
 
-## Android configuration before publish to Google Play🚀
-### gradle.preperties
-- add this line 
-```gradle
-android.bundle.enableUncompressedNativeLibs = false
-```
+## Android integration and release requirements
 
-### build.gradle (app) 
-- Find the buildTypes block:
-```gradle
-buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-               signingConfig signingConfigs.release
+This plugin currently supports **Android only**. The bundled native
+`tun2socks` executable is started from `ApplicationInfo.nativeLibraryDir`
+using `ProcessBuilder`. It therefore **must be extracted to a file**, rather
+than stored only inside the APK.
+
+### Host app packaging
+
+In the host application's `android/app/build.gradle.kts`:
+
+```kotlin
+android {
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
+}
 ```
-- And replace it with the following configuration info:
-```gradle
-splits {
-        abi {
-            enable true
-            reset()
-            //noinspection ChromeOsAbiSupport
-            include "x86_64", "armeabi-v7a", "arm64-v8a"
 
-            universalApk true
+For a Groovy `build.gradle` host app, use:
+
+```groovy
+android {
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
         }
     }
-
-   buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-               signingConfig signingConfigs.release
-               ndk {
-                //noinspection ChromeOsAbiSupport
-                abiFilters "x86_64", "armeabi-v7a", "arm64-v8a"
-                debugSymbolLevel 'FULL'
-            }
-        }
-    }
+}
 ```
+
+Do **not** copy the previous README's `abiFilters`, APK splits or
+`android.bundle.enableUncompressedNativeLibs = false` instructions blindly.
+Those were tied to older Android packaging practices and aren't required
+just to enable the plugin. Keep the ABIs your app actually supports, and
+check device compatibility with the release artifact.
+
+### 16 KB page-size compatibility
+
+The updated 64-bit native libraries have been checked on the Android example
+for 16 KB ELF segment alignment and compatible APK packaging; however,
+**your final app bundle and every bundled native library** must still be
+verified separately.
+
+A successful `flutter build appbundle --release` followed by the Android
+bundletool alignment metadata check is recommended. For APKs, check with the
+Android SDK `zipalign` utility (where applicable):
+
+```bash
+zipalign -c -P 16 -v 4 path/to/app-release.apk
+```
+
+`useLegacyPackaging = true` intentionally extracts native libraries;
+ZIP alignment alone is not a substitute for checking the alignment of their
+ELF `LOAD` segments. Do not assume third-party app dependencies are
+16 KB compatible just because this plugin's native binaries are.
+
+### Foreground services, notifications and Google Play
+
+The Android manifest includes a foreground service for the VPN/proxy daemon
+and declares `FOREGROUND_SERVICE_SPECIAL_USE` on Android 14+. Apps
+published through Google Play may need to declare and justify foreground
+service use in Play Console. App approval is **not** guaranteed by a
+successful local build. Preserve the relevant merged manifest permissions
+and VPN-service declaration.
+
+For full implementation details, see
+[the example Android configuration](./example/android/app/build.gradle.kts)
+and the [2.0.0 change log](./CHANGELOG.md).
+
+<br>
 
 
 ## More examples
-- [Simple v2ray client written in flutter](https://github.com/blueboy-tm/flutter_v2ray/blob/master/example/lib/main.dart)
+- [Simple v2ray client written in flutter](https://github.com/blueboy-tm/flutter_v2ray/blob/modernization/example/lib/main.dart)
 
 ## Credits
 [badvpn (tun2socks)](https://github.com/ambrop72/badvpn) Copyright (C) Ambroz Bizjak

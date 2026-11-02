@@ -52,8 +52,10 @@ jobs:
       # on the current runner image and fails before the build can start.
       - name: Install Android SDK platform
         run: |
-          yes | sdkmanager --licenses > /dev/null
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+          SDK_MANAGER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -n "$SDK_MANAGER"
+          yes | "$SDK_MANAGER" --licenses > /dev/null
+          "$SDK_MANAGER" --install "platforms;android-36" "build-tools;36.0.0"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -78,9 +80,11 @@ jobs:
           cache: true
       - name: Resolve dependencies
         run: flutter pub get
-      - name: Restore Flutter-generated lint migrations to keep Git clean
+      - name: Restore dependency-resolution changes in CI checkout
         run: |
-          git restore -- analysis_options.yaml example/analysis_options.yaml
+          # Flutter SDK and pub resolution can rewrite checked-in lint files
+          # and the example lockfile. Pub requires a clean tracked tree.
+          git restore -- .
           git diff --exit-code
       - name: Verify publishable package without uploading it
         run: dart pub publish --dry-run

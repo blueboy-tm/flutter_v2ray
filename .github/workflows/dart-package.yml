@@ -47,9 +47,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      # GitHub-hosted Ubuntu runners already include Android command-line
+      # tools; setup-android@v3 tries to install obsolete SDK package "tools"
+      # on the current runner image and fails before the build can start.
       - name: Install Android SDK platform
-        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -74,5 +78,9 @@ jobs:
           cache: true
       - name: Resolve dependencies
         run: flutter pub get
+      - name: Restore Flutter-generated lint migrations to keep Git clean
+        run: |
+          git restore -- analysis_options.yaml example/analysis_options.yaml
+          git diff --exit-code
       - name: Verify publishable package without uploading it
-        run: flutter pub publish --dry-run
+        run: dart pub publish --dry-run

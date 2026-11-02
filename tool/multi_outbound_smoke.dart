@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter_v2ray/flutter_v2ray.dart';
+import 'package:flutter_v2ray/config/v2ray_config_builder.dart';
+import 'package:flutter_v2ray/url/parser.dart';
 
 /// Creates Android example-ready JSON configurations for two share links.
 ///
@@ -31,7 +32,7 @@ void main(List<String> args) {
           'Expected exactly two share links, one per line');
     }
 
-    final servers = links.map(FlutterV2ray.parseFromURL).toList();
+    final servers = links.map(parseV2RayURL).toList();
     final directory = Directory('build/multi_outbound_smoke')
       ..createSync(recursive: true);
 

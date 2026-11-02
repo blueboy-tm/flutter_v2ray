@@ -13,6 +13,7 @@
     * [Add dependency](#add-dependency)
     * [Examples](#examples)
         * [URL Parser](#url-parser)
+        * [Multi-Outbound Configuration](#multi-outbound-configuration-modernization)
         * [Edit Configuration](#edit-configuration)
         * [Making V2Ray connection](#making-v2ray-connection)
         * [Bypass LAN Traffic](#bypass-lan-traffic)
@@ -68,6 +69,18 @@ dependencies:
   flutter_v2ray: ^replace-with-latest-version
 ```
 
+To try the unreleased **`modernization`** API (including the multi-outbound builder), use the Git branch instead of the published package:
+
+```yaml
+dependencies:
+  flutter_v2ray:
+    git:
+      url: https://github.com/blueboy-tm/flutter_v2ray.git
+      ref: modernization
+```
+
+Then run `flutter pub get`. The builder described below is **not included in pub.dev version `1.0.10`**.
+
 <br>
 
 ## Examples
@@ -88,12 +101,136 @@ print(parser.remark);
 // generate full v2ray configuration (json)
 print(parser.getFullConfiguration());
 ```
-### Multiple outbounds and routing (modernization)
+### Multi-Outbound Configuration (modernization)
 
-See the [configuration builder guide](./doc/config_builder.md) for examples
-of composing multiple VLESS/VMess/Trojan/etc. outbounds, routing rules,
-round-robin and least-load balancers, and custom DNS or Xray sections.
-The original URL parser and `getFullConfiguration()` API remain available.
+`V2RayConfigBuilder` lets you combine share links into a **single Xray JSON configuration**, choose an outbound with routing rules, configure a balancer, and customize DNS or other Xray sections. The original `FlutterV2ray.parseFromURL()`, `V2RayURL`, and `getFullConfiguration()` APIs still work.
+
+The examples below require the `modernization` Git dependency shown above. Use your own share links instead of the placeholders.
+
+#### 1. Combine two servers and select an outbound
+
+```dart
+import 'package:flutter_v2ray/flutter_v2ray.dart';
+
+final first = FlutterV2ray.parseFromURL('vless://YOUR_FIRST_SERVER');
+final second = FlutterV2ray.parseFromURL('vless://YOUR_SECOND_SERVER');
+
+final builder = V2RayConfigBuilder.fromUrls(
+  [first, second],
+  tags: ['server-a', 'server-b'],
+)
+  // Send incoming SOCKS traffic to server-b instead of the default server-a.
+  ..route(inboundTags: ['in_proxy'], outboundTag: 'server-b');
+
+final String xrayJson = builder.buildJson();
+```
+
+The `tags` identify outbounds inside Xray. They **must be unique**. With no matching routing rule, Xray uses the first outbound by default; `fromUrls()` also preserves the `direct` and `blackhole` outbounds from the first parsed link.
+
+#### 2. Round Robin: distribute new connections across outbounds
+
+```dart
+final builder = V2RayConfigBuilder.fromUrls(
+  [
+    FlutterV2ray.parseFromURL(firstLink),
+    FlutterV2ray.parseFromURL(secondLink),
+  ],
+  tags: ['server-a', 'server-b'],
+)
+  ..addBalancer(
+    tag: 'auto',
+    selector: ['server-'], // Matches outbound tag prefixes.
+    strategy: 'roundRobin',
+  )
+  ..route(
+    inboundTags: ['in_proxy'],
+    balancerTag: 'auto',
+  );
+
+final String xrayJson = builder.buildJson();
+```
+
+A balancer **does not select itself**: the `route(... balancerTag: 'auto')` rule is what sends matching traffic to it. `roundRobin` selects among matching outbounds for new connections; it does **not** guarantee automatic failover when a server stops working. Strategies such as `leastLoad` need additional Xray health-check/observatory configuration and separate testing.
+
+#### 3. Customize DNS and routing
+
+```dart
+final builder = V2RayConfigBuilder.fromUrls(
+  [
+    FlutterV2ray.parseFromURL(firstLink),
+    FlutterV2ray.parseFromURL(secondLink),
+  ],
+  tags: ['server-a', 'server-b'],
+)
+  ..setDnsServers(['1.1.1.1', '8.8.8.8'])
+  // More specific rules go before general catch-all rules.
+  ..route(
+    domains: ['domain:example.com'],
+    outboundTag: 'server-b',
+  )
+  ..route(
+    inboundTags: ['in_proxy'],
+    outboundTag: 'server-a',
+  );
+
+final String xrayJson = builder.buildJson(indent: 2);
+```
+
+For arbitrary Xray rules, use `addRoutingRule({...})`. To preserve and modify an existing complete configuration, use `V2RayConfigBuilder.fromJson(existingJson)`:
+
+```dart
+final builder = V2RayConfigBuilder.fromJson(existingXrayJson)
+  ..addOutboundFromUrl(
+    FlutterV2ray.parseFromURL(extraLink),
+    tag: 'backup',
+  )
+  ..setSection('log', {'loglevel': 'info'});
+
+// Or replace a particular outbound while keeping its tag:
+// builder.replaceOutbound('backup', customOutboundMap);
+
+final Map<String, dynamic> configMap = builder.build();
+final String xrayJson = builder.buildJson();
+```
+
+`build()` returns a separate, editable map. `setSection()` replaces a **whole top-level Xray section**; don't use it when you only intend to change one nested field. The native Xray core validates the final configuration, so custom rules and strategies must follow its schema.
+
+#### 4. Connect using the generated JSON
+
+Use the same `FlutterV2ray` API as for single-server configurations:
+
+```dart
+final client = FlutterV2ray(
+  onStatusChanged: (status) => print(status.state),
+);
+
+await client.initializeV2Ray();
+
+if (await client.requestPermission()) {
+  await client.startV2Ray(
+    remark: 'Multi Server',
+    config: xrayJson, // From any of the builders above.
+    proxyOnly: false, // true to run only the local proxy.
+  );
+}
+
+// When finished:
+// await client.stopV2Ray();
+```
+
+`requestPermission()` is for Android VPN mode; Proxy Only does not require VPN permission. The builder produces **one configuration containing multiple outbounds**, not several simultaneous Android VPN services.
+
+#### 5. Generate ready-to-test JSON files (optional)
+
+From the package repository root, put **two share links, one per line**, in a local file such as `nodes.txt` (do not commit it). Then run:
+
+```bash
+dart run tool/multi_outbound_smoke.dart nodes.txt
+```
+
+The CLI tool creates `build/multi_outbound_smoke/server-a.json`, `server-b.json`, and `round-robin.json`. Paste each JSON into the example app separately to check individual servers and multi-outbound routing. These files contain server credentials: **do not publish or attach them to issues**. Successful connections alone don't prove both outbounds were selected; use Xray routing logs when validating distribution.
+
+For additional APIs and advanced balancer examples, see the [configuration builder guide](./doc/config_builder.md).
 
 ### Edit Configuration
 ``` dart
